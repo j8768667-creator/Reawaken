@@ -6,10 +6,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Everlast">
+<meta name="apple-mobile-web-app-title" content="Biome">
 <meta name="theme-color" content="#06090f">
 <meta name="format-detection" content="telephone=no">
-<title>Everlast — an evolving living soundscape</title>
+<title>Biome — a living soundscape</title>
 <style>
 :root{
   --bg:#06090f; --fg:#e4edf4; --dim:#93a7b8; --accent:#8fe3c8;
@@ -91,6 +91,7 @@ h4.sec{margin:18px 0 4px;font-size:12px;letter-spacing:.14em;text-transform:uppe
 @media(max-width:700px){.samp{grid-template-columns:1fr}}
 .wf{width:100%;height:84px;border-radius:12px;background:rgba(0,0,0,.28);touch-action:pan-y}
 .trimhint{color:var(--dim);font-size:12px;margin:-4px 0 2px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:6px 28px}
 .sname{display:flex;gap:10px;align-items:baseline;margin-bottom:8px}
 .sname b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:62%}
 .sname small{color:var(--dim);font-size:12px}
@@ -107,6 +108,24 @@ h4.sec{margin:18px 0 4px;font-size:12px;letter-spacing:.14em;text-transform:uppe
   padding:12px 18px;border-radius:14px;background:rgba(14,22,34,.94);border:1px solid var(--line);font-size:14px;
   opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:30;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+input[type=text]{-webkit-user-select:text;user-select:text;-webkit-appearance:none;appearance:none;font:inherit;font-size:16px;
+  color:var(--fg);background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:999px;min-height:44px;padding:0 18px;flex:2;min-width:0}
+input[type=text]:focus{outline:none;border-color:rgba(143,227,200,.7)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin:8px 0}
+.pcard{appearance:none;-webkit-appearance:none;font:inherit;text-align:left;color:var(--fg);background:rgba(255,255,255,.06);
+  border:1px solid var(--line);border-radius:16px;padding:11px 14px;min-height:66px;touch-action:manipulation;cursor:pointer}
+.pcard b{display:block;font-size:15px;margin-bottom:2px}
+.pcard small{display:block;color:var(--dim);font-size:12px;line-height:1.35}
+.pcard:active{background:rgba(255,255,255,.18)}
+.pcard.on{background:rgba(143,227,200,.2);border-color:rgba(143,227,200,.6)}
+.scn{padding:12px 14px;margin:8px 0;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.04)}
+.scn.on{border-color:rgba(143,227,200,.6);background:rgba(143,227,200,.1)}
+.scn .top{display:flex;align-items:center;gap:10px;min-height:30px}
+.scn .nm{font-size:15px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scn .top small{color:var(--dim);font-size:12px;white-space:nowrap}
+.scn .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.scn input[type=text]{flex:1;min-height:40px}
+.namerow{display:flex;gap:10px;align-items:center;margin:8px 0}
 
 #kbd{position:fixed;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);bottom:calc(var(--sb) + 10px);z-index:7;
   padding:10px;border-radius:22px;background:var(--panel);border:1px solid var(--line);
@@ -131,18 +150,24 @@ h4.sec{margin:18px 0 4px;font-size:12px;letter-spacing:.14em;text-transform:uppe
   <div id="hudR"><button class="pill on" id="btnAmb">Ambience on</button><button class="pill" id="btnKeys">Keys</button><button class="pill" id="btnMix">Controls</button><button class="pill" id="btnRest">Rest</button></div>
 </div>
 
-<div id="hint">Tap to touch the water · hold to plant a bloom · double-tap a bloom to remove it · drag to stir the wind</div>
+<div id="hint">Tap to touch the water · hold to plant a bloom · drag to stir the wind</div>
 
 <section id="panel" aria-label="Controls">
   <div id="tabs">
     <button class="pill tab on" data-t="mix">Mix</button>
     <button class="pill tab" data-t="sounds">Your sounds</button>
+    <button class="pill tab" data-t="scenes">Scenes</button>
     <button class="pill tab" data-t="world">World</button>
   </div>
 
   <div class="pane on" id="p-mix">
-    <p class="legend"><b>Everlast</b> is a continuously evolving sonic environment. These five complementary layers form its core: <b>Base</b> grounds, <b>Harmony</b> drifts, <b>Enviro</b> surrounds, <b>Shards</b> flicker, and <b>Sparkle</b> illuminates.</p>
-    <div id="faders"></div>
+    <div class="chips" id="grpchips"></div>
+    <h4 class="sec">Five layers</h4>
+    <p class="legend"><b>Core</b> deep evolving drones that ground you in the body. <b>Flow</b> a choir-like harmonic bed whose colour and pitch drift. <b>Grain</b> stretched fragments of wind, water and space. <b>Shard</b> fleeting melodies that surface and dissolve. <b>Glow</b> high sparkling tones that flicker like light on water.</p>
+    <div class="fgrid" id="f-layers"></div>
+    <h4 class="sec">Nature</h4><div class="fgrid" id="f-nature"></div>
+    <h4 class="sec">Played by you</h4><div class="fgrid" id="f-played"></div>
+    <h4 class="sec">Overall</h4><div class="fgrid" id="f-global"></div>
   </div>
 
   <div class="pane" id="p-sounds">
@@ -155,12 +180,24 @@ h4.sec{margin:18px 0 4px;font-size:12px;letter-spacing:.14em;text-transform:uppe
       <b>Cloud</b> grinds a sound into a granular texture that swells with the wind.
       <b>Scatter</b> plays it like a creature, and the birds and owls answer.
       <b>Bed</b> crossfades it into a slow loop that breathes with the world.
-      <b>In key</b> retunes it to the current scale.</p>
-    <h4 class="sec">Bloom sound source</h4>
-    <p class="legend">Choose what planted blooms use when they speak: their evolving synthetic voice, one of your sounds, or a different sound each time.</p>
-    <div class="chips" id="bloomSources"></div>
+      <b>In key</b> retunes it to the current scale. Planted blooms will also borrow your Scatter sounds.</p>
     <div id="samples"></div>
     <p class="legend" id="nosamp">Nothing here yet. Add a sound above.</p>
+  </div>
+
+  <div class="pane" id="p-scenes">
+    <h4 class="sec">Presets</h4>
+    <p class="legend">Ready-made worlds. Each sets the key, time of day, weather, the mix and which layers are on, and a few plant blooms. Your own sounds and the master volume are left alone.</p>
+    <div class="pgrid" id="presets"></div>
+    <h4 class="sec">My scenes</h4>
+    <p class="legend">A scene remembers everything: mix, key, time, weather, drift, your sounds’ settings and your blooms. <b>Load</b> brings it back, <b>Update</b> overwrites it with what you have now.</p>
+    <div class="namerow"><input type="text" id="sceneName" maxlength="40" placeholder="Name this scene" autocomplete="off" autocorrect="off" spellcheck="false"><button class="pill" id="btnSceneSave">Save as new</button></div>
+    <div id="scenes"></div>
+    <div class="row">
+      <button class="pill big" id="btnSceneExport">Export scenes</button>
+      <label class="pill big" for="sceneImport">Import scenes…</label>
+    </div>
+    <input class="file" type="file" id="sceneImport">
   </div>
 
   <div class="pane" id="p-world">
@@ -168,11 +205,11 @@ h4.sec{margin:18px 0 4px;font-size:12px;letter-spacing:.14em;text-transform:uppe
     <div class="chips" id="roots"></div><div class="chips" id="modes"></div><div class="chips" id="keyopts"></div>
     <div class="chips" id="drifts"></div>
     <p class="legend">Drift moves the world to a related key every few minutes, gliding the drone across. Changing the key retunes the drone, the creatures, the blooms and any sound set to “In key”. Choosing a key locks it, so “New world” keeps it until you unlock it.</p>
-    <h4 class="sec">Moods</h4><div class="chips" id="moods"></div>
-    <h4 class="sec">Scenes</h4>
-    <div class="row" style="margin-top:6px"><button class="pill big" id="btnSceneSave">+ Save current setup as a scene</button></div>
-    <div id="scenes"></div>
     <h4 class="sec">Make something happen</h4><div class="chips" id="events"></div>
+    <h4 class="sec">Blooms</h4>
+    <div class="chips" id="bloomOpts"></div>
+    <div id="bloomList"></div>
+    <p class="legend">On the world itself: tap a bloom to feed it, drag to move it, hold it for a moment to let it go.</p>
     <h4 class="sec">Time</h4><div id="wfaders"></div><div class="chips" id="times"></div>
     <h4 class="sec">Sleep timer</h4><div class="chips" id="sleeps"></div>
     <h4 class="sec">Capture &amp; display</h4>
@@ -203,8 +240,8 @@ h4.sec{margin:18px 0 4px;font-size:12px;letter-spacing:.14em;text-transform:uppe
 </div>
 
 <div id="intro">
-  <h1>EVERLAST</h1>
-  <p>An evolving soundscape built from five living layers — Base, Harmony, Enviro, Shards and Sparkle. Nothing is sampled or looped; every layer is computed live and continuously responds to the world around it.</p>
+  <h1>BIOME</h1>
+  <p>A soundscape that breathes. Nothing is sampled and nothing loops — every sound is computed live, and each layer listens to the others.</p>
   <button class="pill" id="btnStart">Awaken</button>
   <div id="err"></div>
   <small>Best with headphones or speakers · no files needed</small>
@@ -248,7 +285,7 @@ document.addEventListener('contextmenu',ev=>ev.preventDefault());
 /* ============================================================
    Settings
    ============================================================ */
-const S={drone:.7,air:.6,water:.6,insects:.65,voices:.65,pulse:.4,blooms:.65,user:.75,space:.55,vitality:.55,volume:.8,dayMin:12,hold:false,ambient:true,keyRoot:-1,keyMode:'',keyLock:false,drift:0,keys:.75,base:.82,harmony:.62,enviro:.58,shards:.38,sparkle:.32,bloomSource:'generated'};
+const S={drone:.7,air:.6,water:.6,insects:.65,voices:.65,pulse:.4,blooms:.65,user:.75,space:.55,vitality:.55,volume:.8,dayMin:12,hold:false,ambient:true,keyRoot:-1,keyMode:'',keyLock:false,drift:0,keys:.75,flow:.6,grain:.55,shard:.5,glow:.5,layers:true,nature:true};
 try{const o=JSON.parse(localStorage.getItem('biome.v1')||'{}');for(const k in S)if(k in o&&typeof o[k]===typeof S[k])S[k]=o[k];}catch(e){}
 const save=()=>{try{localStorage.setItem('biome.v1',JSON.stringify(S));}catch(e){}};
 
@@ -389,12 +426,12 @@ function build(){
   A.reverbOut=ctx.createGain();A.reverbOut.gain.value=.7;
   A.reverbIn.connect(conv);conv.connect(rhp);rhp.connect(A.reverbOut);A.reverbOut.connect(A.masterIn);
 
-  A.bus={drone:bus(.35),wind:bus(.25),water:bus(.3),insects:bus(.3),voices:bus(.3),pulse:bus(.05),bloom:bus(.45),user:bus(.4),keys:bus(.5),base:bus(.45),harmony:bus(.62),enviro:bus(.58),shards:bus(.72),sparkle:bus(.78)};
+  A.bus={drone:bus(.35),wind:bus(.25),water:bus(.3),insects:bus(.3),voices:bus(.3),pulse:bus(.05),bloom:bus(.45),user:bus(.4),keys:bus(.5),flow:bus(.55),grain:bus(.65),shard:bus(.5),glow:bus(.45)};
   A.insDuck=ctx.createGain();A.insDuck.connect(A.bus.insects.in);
   A.dripDuck=ctx.createGain();A.dripDuck.connect(A.bus.water.in);
   A.dripBus={in:A.dripDuck,wet:A.bus.water.wet};
 
-  buildDrone();buildWind();buildInsects();buildEverlastLayers();
+  buildDrone();buildWind();buildInsects();buildLayers();
 }
 
 function buildDrone(){
@@ -403,7 +440,7 @@ function buildDrone(){
   L.out=ctx.createGain();L.filter.connect(L.out);L.out.connect(A.bus.drone.in);
   const spec=[
     {k:'body',m:2,off:0,base:.17},{k:'body',m:2,off:2,base:.14},{k:'body',m:2,off:4,base:.13},{k:'body',m:2,off:6,base:.07},
-    {k:'sub',m:1,off:0,base:.16},
+    {k:'sub',m:1,off:0,base:.16},{k:'sub',m:1,off:0,base:.1,det:7},{k:'sub',m:1,off:0,base:.09,det:-6},{k:'sub',m:.5,off:0,base:.08},
     {k:'air',m:8,off:0,base:.045},{k:'air',m:8,off:2,base:.04},{k:'air',m:8,off:4,base:.035},{k:'air',m:16,off:4,base:.016}
   ];
   for(const s of spec){
@@ -414,7 +451,7 @@ function buildDrone(){
       g1.gain.value=.35;g2.gain.value=.9;o1.connect(g1);o2.connect(g2);g1.connect(vg);g2.connect(vg);
       vg.connect(L.filter);oscs.push(o1,o2);
     }else{
-      const o1=ctx.createOscillator();o1.type='sine';o1.connect(vg);oscs.push(o1);
+      const o1=ctx.createOscillator();o1.type='sine';o1.detune.value=s.det||0;o1.connect(vg);oscs.push(o1);
       if(s.k==='air'){const o2=ctx.createOscillator();o2.type='sine';o2.detune.value=rand(5,12);o2.connect(vg);oscs.push(o2);}
       vg.connect(L.out);
     }
@@ -429,6 +466,14 @@ function setChord(tau){
     const f=noteHz(W.d+v.off)*v.m;
     v.oscs.forEach(o=>{if(tau)o.frequency.setTargetAtTime(f,t,tau);else o.frequency.value=f;});
   }
+  if(A.flow)for(const v of A.flow.voices){
+    const f=noteHz(W.d+v.off)*v.m;
+    v.oscs.forEach(o=>{if(tau)o.frequency.setTargetAtTime(f,t,tau);else o.frequency.value=f;});
+  }
+  if(A.glow)A.glow.pad.forEach(p=>{
+    let f=noteHz(W.d+p.off)*p.m;while(f>6500)f/=2;
+    if(tau)p.o.frequency.setTargetAtTime(f,t,tau*.5);else p.o.frequency.value=f;
+  });
   const wf=ptf(pickIdx(700,1700));
   if(tau)A.wind.whBP.frequency.setTargetAtTime(wf,t,2.5);else A.wind.whBP.frequency.value=wf;
   A.wind.whF=wf;
@@ -483,81 +528,6 @@ function buildInsects(){
     cr.push({g,pan:p.pan?p.pan.value:0,far,thr:.04+i*.085,w:TAU*rand(1.5,2.5),th:rand(0,TAU),n:far?4:3,gap:far?.034:.04});
   }
   A.crickets=cr;
-}
-
-
-/* ---------- Everlast: five complementary core layers ---------- */
-/* Base: deep, slowly moving resonant tones. */
-function buildEverlastLayers(){
-  const H={voices:[]};
-  H.filter=ctx.createBiquadFilter();H.filter.type='lowpass';H.filter.frequency.value=420;H.filter.Q.value=.8;
-  H.out=ctx.createGain();H.filter.connect(H.out);H.out.connect(A.bus.base.in);
-  [0,2,4,7].forEach((off,i)=>{
-    const o=ctx.createOscillator(),g=ctx.createGain();
-    o.type=i===0?'sine':(i%2?'triangle':'sawtooth');
-    o.detune.value=rand(-7,7);g.gain.value=[.22,.12,.10,.07][i];
-    o.connect(g);g.connect(H.filter);o.start();
-    H.voices.push({o,g,off,phase:rand(0,TAU),rate:rand(.015,.045)});
-  });
-  H.filter.connect(A.bus.base.in);
-
-  /* Harmony: a soft synthetic choir/instrument with slow drift and vibrato. */
-  const Y={voices:[]};
-  Y.filter=ctx.createBiquadFilter();Y.filter.type='lowpass';Y.filter.frequency.value=1900;Y.filter.Q.value=.55;
-  Y.out=ctx.createGain();Y.filter.connect(Y.out);Y.out.connect(A.bus.harmony.in);
-  [0,2,4].forEach((off,i)=>{
-    const o=ctx.createOscillator(),o2=ctx.createOscillator(),g=ctx.createGain();
-    o.type='sine';o2.type='triangle';o.detune.value=rand(-9,9);o2.detune.value=rand(-14,14);
-    g.gain.value=[.10,.075,.055][i];o.connect(g);o2.connect(g);g.connect(Y.filter);
-    o.start();o2.start();
-    Y.voices.push({o,o2,g,off,phase:rand(0,TAU),rate:rand(.025,.07),vib:rand(.08,.18)});
-  });
-  A.harmony=Y;
-
-  /* Enviro: stretched, filtered noise beds that respond to wind, moisture and night. */
-  const E={};
-  E.low=ctx.createBiquadFilter();E.low.type='lowpass';E.low.frequency.value=700;E.low.Q.value=.45;
-  E.high=ctx.createBiquadFilter();E.high.type='bandpass';E.high.frequency.value=1800;E.high.Q.value=.55;
-  E.g1=ctx.createGain();E.g2=ctx.createGain();E.g1.gain.value=0;E.g2.gain.value=0;
-  E.p1=mkPan(-.25);E.p2=mkPan(.35);
-  const n1=noiseSrc(),n2=noiseSrc();n1.playbackRate.value=.32;n2.playbackRate.value=.18;
-  n1.connect(E.low);E.low.connect(E.g1);E.g1.connect(E.p1);E.p1.connect(A.bus.enviro.in);
-  n2.connect(E.high);E.high.connect(E.g2);E.g2.connect(E.p2);E.p2.connect(A.bus.enviro.in);
-  A.enviro=E;
-
-  A.shardClock=rand(5,11);
-}
-
-/* Shards: short, unpredictable melodic memories that appear and dissolve. */
-function everlastShard(t){
-  if(!ctx||!S.ambient||S.shards<.01||W.hush>.72)return;
-  const count=1+((Math.random()*3)|0), start=pickIdx(280,2200), pan=rand(-.9,.9);
-  for(let i=0;i<count;i++){
-    const tt=t+i*rand(.06,.24), idx=clamp(start+pick([-5,-3,-2,0,1,2,4,5]),0,W.PT.length-1);
-    const f=ptf(idx)*(1+rand(-.008,.008)),dur=rand(.09,.42);
-    const ev=mkEvent(A.bus.shards,pan+rand(-.12,.12),rand(.5,.9),Math.min(9000,f*3));
-    const o=ctx.createOscillator(),g=ctx.createGain();
-    o.type=pick(['sine','triangle']);o.frequency.setValueAtTime(f,tt);
-    o.detune.setValueAtTime(rand(-18,18),tt);o.connect(g);g.connect(ev.head);
-    const e=ev.head.gain;e.setValueAtTime(.0001,tt);e.exponentialRampToValueAtTime(rand(.025,.07)*(1-.45*W.hush),tt+.015);
-    e.exponentialRampToValueAtTime(.0001,tt+dur);
-    o.start(tt);o.stop(tt+dur+.05);release(o,[...ev.nodes,g]);
-    later(tt,()=>noteDot(VW*(.5+.5*pan),VH*(.2+.55*Math.random()),rand(35,90)));
-  }
-}
-
-/* Sparkle: crystalline high tones, sparse enough to feel like light rather than melody. */
-function everlastSpark(t){
-  if(!ctx||!S.ambient||S.sparkle<.01)return;
-  const idx=pickIdx(2400,6200),f=ptf(idx)*(1+rand(-.012,.012)),pan=rand(-.85,.85),dur=rand(.18,.8);
-  const ev=mkEvent(A.bus.sparkle,pan,rand(.7,1.1),10000);
-  const o=ctx.createOscillator(),g=ctx.createGain();
-  o.type=pick(['sine','triangle']);o.frequency.setValueAtTime(f,t);o.detune.value=rand(-12,12);
-  o.connect(g);g.connect(ev.head);
-  const e=ev.head.gain;e.setValueAtTime(.0001,t);e.exponentialRampToValueAtTime(rand(.012,.035),t+.02);
-  e.exponentialRampToValueAtTime(.0001,t+dur);
-  o.start(t);o.stop(t+dur+.04);release(o,[...ev.nodes,g]);
-  later(t,()=>noteDot(VW*(.5+.5*pan),VH*(.05+.22*Math.random()),rand(160,220)));
 }
 
 /* ---------- one-shot voices ---------- */
@@ -687,26 +657,27 @@ function flutter(t,pan){
 }
 
 /* ---------- tuning / state sync ---------- */
-const TRIM={drone:.8,air:.9,water:.85,insects:1.15,voices:.9,pulse:1.1,bloom:1,user:1,keys:1,base:.9,harmony:.85,enviro:.9,shards:.8,sparkle:.72};
+const TRIM={drone:.6,air:.9,water:.85,insects:1.15,voices:.9,pulse:1.1,bloom:1,user:1,keys:1,flow:3.8,grain:.95,shard:2.6,glow:6.5};
 const tap=v=>Math.pow(v,1.4);
+function natOn(){return S.ambient&&S.nature;}
+function layersOn(){return S.ambient&&S.layers;}
 function applyLevels(slow,tc){
   if(!ctx)return;
   const t=ctx.currentTime,k=tc||.1;
-  const am=S.ambient?1:0; // master switch for every procedural layer
-  A.bus.drone.setLevel(tap(S.drone)*TRIM.drone*am,k);
-  A.bus.wind.setLevel(tap(S.air)*TRIM.air*am,k);
-  A.bus.water.setLevel(tap(S.water)*TRIM.water*am,k);
-  A.bus.insects.setLevel(tap(S.insects)*TRIM.insects*am,k);
-  A.bus.voices.setLevel(tap(S.voices)*TRIM.voices*am,k);
-  A.bus.pulse.setLevel(tap(S.pulse)*TRIM.pulse*am,k);
+  const amL=S.ambient&&S.layers?1:0,amN=S.ambient&&S.nature?1:0; // generative switches
+  A.bus.drone.setLevel(tap(S.drone)*TRIM.drone*amL,k);
+  A.bus.flow.setLevel(tap(S.flow)*TRIM.flow*amL,k);
+  A.bus.grain.setLevel(tap(S.grain)*TRIM.grain*amL,k);
+  A.bus.shard.setLevel(tap(S.shard)*TRIM.shard*amL,k);
+  A.bus.glow.setLevel(tap(S.glow)*TRIM.glow*amL,k);
+  A.bus.wind.setLevel(tap(S.air)*TRIM.air*amN,k);
+  A.bus.water.setLevel(tap(S.water)*TRIM.water*amN,k);
+  A.bus.insects.setLevel(tap(S.insects)*TRIM.insects*amN,k);
+  A.bus.voices.setLevel(tap(S.voices)*TRIM.voices*amN,k);
+  A.bus.pulse.setLevel(tap(S.pulse)*TRIM.pulse*amN,k);
   A.bus.bloom.setLevel(tap(S.blooms)*TRIM.bloom,k);
   A.bus.user.setLevel(tap(S.user)*TRIM.user,k);
   A.bus.keys.setLevel(tap(S.keys)*TRIM.keys,k);
-  A.bus.base.setLevel(tap(S.base)*TRIM.base*am,k);
-  A.bus.harmony.setLevel(tap(S.harmony)*TRIM.harmony*am,k);
-  A.bus.enviro.setLevel(tap(S.enviro)*TRIM.enviro*am,k);
-  A.bus.shards.setLevel(tap(S.shards)*TRIM.shards*am,k);
-  A.bus.sparkle.setLevel(tap(S.sparkle)*TRIM.sparkle*am,k);
   A.reverbOut.gain.setTargetAtTime(S.space*1.3,t,Math.max(.25,k));
   if(!fading)A.master.gain.setTargetAtTime(sq(S.volume)*1.1,slow?t+.1:t,slow?1.8:.1);
 }
@@ -757,38 +728,7 @@ function tick(){
 
   if(t>W.nextChord)chooseChord(false);
 
-  /* ---- Everlast core: five layers breathe together ---- */
-  if(A.harmony){
-    for(const v of A.harmony.voices){
-      v.phase+=TAU*v.rate*dt;
-      const drift=Math.sin(v.phase)*10 + Math.sin(v.phase*.37)*6;
-      const rootF=noteHz(W.d+v.off);
-      v.o.frequency.setTargetAtTime(rootF*(1+drift/1200),t,.7);
-      v.o2.frequency.setTargetAtTime(rootF*2*(1-drift/1600),t,.9);
-      v.g.gain.setTargetAtTime((.65+.35*W.breath)*(1-.35*W.hush),t,.8);
-      if(v.o.detune)v.o.detune.setTargetAtTime(drift,t,1.2);
-    }
-    A.harmony.filter.frequency.setTargetAtTime(900+1700*W.breath+700*W.energy,t,1.5);
-  }
-  if(A.enviro){
-    const env=(.25+.55*W.wind+.35*W.moisture+.2*W.night)*(1-.45*W.hush);
-    A.enviro.low.frequency.setTargetAtTime(180+650*W.wind+220*W.moisture,t,1.8);
-    A.enviro.high.frequency.setTargetAtTime(700+1800*W.wind+900*W.moisture,t,2.2);
-    A.enviro.g1.gain.setTargetAtTime(.12+.55*env,t,1.6);
-    A.enviro.g2.gain.setTargetAtTime(.035+.32*env,t,2.1);
-    if(A.enviro.p1.pan){A.enviro.p1.pan.setTargetAtTime(.45*Math.sin(t*.025),t,2);A.enviro.p2.pan.setTargetAtTime(.5*Math.sin(t*.019+2),t,2);}
-  }
-  A.shardClock-=dt;
-  if(A.shardClock<=0){
-    everlastShard(t+.05);
-    A.shardClock=rand(5,13)/(0.65+.7*W.energy);
-  }
-  if(Math.random()<dt*(.018+.045*W.light+.03*W.energy)*S.sparkle){
-    everlastSpark(t+.08+Math.random()*.25);
-  }
-
   /* ---- drone ---- */
-
   for(const v of A.drone.voices){
     v.lp+=TAU*v.lf*dt;const m=.5+.5*Math.sin(v.lp);let a;
     if(v.k==='body')a=v.base*(.3+.7*lerp(m,W.breath,.5));
@@ -797,6 +737,9 @@ function tick(){
     v.g.gain.setTargetAtTime(a,t,.3);
   }
   A.drone.filter.frequency.setTargetAtTime(260+(900+1400*W.energy)*W.breath*(.6+.4*W.light)+120*W.wind,t,.2);
+  if(W.coreRes==null)W.coreRes=.4;
+  W.coreRes=clamp(ou(W.coreRes,.4,.03,.09,dt),0,1);
+  A.drone.filter.Q.setTargetAtTime(.7+3.4*W.coreRes*W.coreRes+.8*W.breath,t,.5); // the body of the drone slowly resonates
 
   /* ---- wind ---- */
   const w=W.wind,Wd=A.wind;
@@ -808,7 +751,7 @@ function tick(){
   Wd.whG.gain.setTargetAtTime(2.6*Math.pow(w,2.6),t,.4);
   if(Wd.lowPan.pan){Wd.lowPan.pan.setTargetAtTime(.6*Math.sin(t*.07),t,.5);Wd.hiPan.pan.setTargetAtTime(.7*Math.sin(t*.05+2),t,.5);Wd.whPan.pan.setTargetAtTime(.5*Math.sin(t*.031+1),t,.5);}
   // leaf rustle: granular texture that thickens with wind
-  let rn=(S.ambient?26:0)*Math.pow(w,2.4)*dt;
+  let rn=(natOn()?26:0)*Math.pow(w,2.4)*dt;
   while(rn>0){
     if(Math.random()<Math.min(rn,1))noiseHit(A.bus.wind,t+.05+Math.random()*dt,rand(.02,.07),rand(2800,6500),rand(.8,2),rand(.03,.08),rand(-.9,.9),.2);
     rn-=1;
@@ -820,13 +763,13 @@ function tick(){
   Wd.rainBP.frequency.setTargetAtTime(4200+1500*rain+800*w,t,.5);
   A.dripDuck.gain.setTargetAtTime(1-.5*W.hush,t,.1);
   const dripRate=(.08+1.7*Math.pow(W.moisture,1.6))*(.6+.8*(1-W.breath))*(1-.3*W.hush);
-  if(S.ambient&&S.water>.01&&Math.random()<dripRate*dt){
+  if(natOn()&&S.water>.01&&Math.random()<dripRate*dt){
     const f=ptf(pickIdx(700,3400));
     drip(t+.05+Math.random()*dt,rand(-.9,.9),rand(.06,.15),f,false);
   }
 
   /* ---- insects: Kuramoto-coupled chorus that joins in at dusk ---- */
-  const act=(S.ambient?1:0)*clamp(W.night*(1-.85*W.storm)*(1-.65*W.wind)*(1-W.tension)*(.45+.55*W.energy)*1.15,0,1);
+  const act=(natOn()?1:0)*clamp(W.night*(1-.85*W.storm)*(1-.65*W.wind)*(1-W.tension)*(.45+.55*W.energy)*1.15,0,1);
   A.insDuck.gain.setTargetAtTime(1-.6*W.hush,t,.08);
   const cr=A.crickets,N=cr.length,K=.5+3*W.energy;
   for(let i=0;i<N;i++){
@@ -846,7 +789,7 @@ function tick(){
   }
 
   /* ---- voices: spontaneous calls, answered by other creatures ---- */
-  if(S.ambient&&S.voices>.01&&t>W.busyUntil){
+  if(natOn()&&S.voices>.01&&t>W.busyUntil){
     const birdAct=W.light*(.35+.65*W.energy)*(1+2.2*W.dawn+.8*W.dusk)*(1-.9*W.tension)*(1-.8*W.storm);
     const owlAct=Math.pow(W.night,1.3)*(.3+.7*W.energy)*(1-W.tension)*(1-.7*W.storm);
     if(Math.random()<(.02+.14*birdAct)*dt){
@@ -858,6 +801,12 @@ function tick(){
 
   /* ---- your sounds & planted blooms ---- */
   userTick(t,dt);bloomsTick(t,dt);kbTick(t);
+  if(layersOn()){
+    if(S.flow>.01)flowTick(t,dt);
+    if(S.grain>.01)grainTick(t,dt);
+    if(S.shard>.01)shardTick(t,dt);
+    if(S.glow>.01)glowTick(t,dt);
+  }
   if(S.drift>0){ // key drift: wander to a related key every few minutes
     if(W.nextDrift==null)W.nextDrift=t+S.drift*60*rand(.8,1.2);
     else if(t>=W.nextDrift){W.nextDrift=t+S.drift*60*rand(.8,1.2);driftKey();}
@@ -871,7 +820,7 @@ function tick(){
   }
 
   /* ---- pulse: lub-dub; faster with energy, modulated by the breath ---- */
-  if(S.ambient&&S.pulse>.01){
+  if(natOn()&&S.pulse>.01){
     while(W.nextBeat<t+.15){
       const tb=Math.max(W.nextBeat,t+.03),v=.5*(.8+.2*W.night);
       thump(tb,v);thump(tb+.23,v*.7);later(tb,()=>{viz.heart=1;});
@@ -983,7 +932,7 @@ function addSample(buf,name,ab,o){
     mode:o.mode||(d<3?'scatter':d<24?'cloud':'bed'),level:o.level!=null?o.level:.7,when:o.when||'any',tune:!!o.tune,
     peaks:an.peaks,norm:an.norm,hz:an.hz,t0:clamp(o.t0||0,0,.98),t1:clamp(o.t1!=null?o.t1:1,.02,1),off:!!o.off,cur:Math.random()*d,acc:0,until:0,nextBed:0,dead:false,at:o.at||0
   };
-  SAMP.push(s);renderSample(s);refreshBloomSources();
+  SAMP.push(s);renderSample(s);
   if(!o.restored)persist(s,true);
   return s;
 }
@@ -1040,15 +989,6 @@ function drawWave(c,s){
 }
 function redrawWaves(){SAMP.forEach(s=>{if(s.wf)drawWave(s.wf,s);});
 }
-function refreshBloomSources(){
-  const box=$('#bloomSources');if(!box)return;
-  box.innerHTML='';
-  const add=(label,value)=>{const b=document.createElement('button');b.className='pill sm'+(S.bloomSource===value?' on':'');b.textContent=label;b.addEventListener('click',()=>{S.bloomSource=value;save();refreshBloomSources();toast(value==='generated'?'Blooms use their evolving voice':value==='random'?'Blooms choose from your sounds':'Blooms use “'+label+'”');});box.appendChild(b);};
-  add('Generated','generated');
-  if(SAMP.length)add('My sounds · random','random');
-  SAMP.filter(s=>!s.dead).forEach(s=>add('♪ '+s.name,s.id));
-}
-
 function renderSample(s){
   const d=document.createElement('div');d.className='samp';
   d.innerHTML='<canvas class="wf" width="900" height="168"></canvas><div class="trimhint">Drag the two handles to trim the sound or set its loop region.</div><div class="sbody"><div class="sname"><b></b><small></small></div>'
@@ -1107,8 +1047,7 @@ function removeSample(s,el){
   s.dead=true;const i=SAMP.indexOf(s);if(i>=0)SAMP.splice(i,1);
   if(s.bedG&&ctx){s.bedG.gain.setTargetAtTime(0,ctx.currentTime,.2);setTimeout(()=>{try{s.bedP.disconnect();}catch(e){}},1500);}
   if(el&&el.remove)el.remove();
-  if(S.bloomSource===s.id){S.bloomSource='generated';save();}
-  dbDel(s.id);syncEmpty();refreshBloomSources();
+  dbDel(s.id);syncEmpty();
 }
 
 /* ---- playback: every mode listens to the world ---- */
@@ -1144,7 +1083,7 @@ function userCall(s,t){
   W.hushUntil=Math.max(W.hushUntil,t+span*.7);W.busyUntil=Math.max(W.busyUntil,t+span*.8);
   W.energy=Math.min(1,W.energy+.02);
   later(t,()=>ring(VW*(.5+.5*pan),VH*.3,330));
-  if(S.ambient&&Math.random()<.55){ // the ecosystem answers your sound
+  if(natOn()&&Math.random()<.55){ // the ecosystem answers your sound
     const wait=(t+span+rand(.8,2.6)-ctx.currentTime)*1000;
     setTimeout(()=>{
       if(!running||W.tension>.3)return;
@@ -1219,7 +1158,7 @@ function userTick(t,dt){
 /* ============================================================
    Blooms — creatures you plant by holding the screen
    ============================================================ */
-const BL=[];let firstBloom=true;
+const BL=[];let firstBloom=true,bloomSeq=0;
 const bloomF=b=>170*Math.pow(2600/170,1-clamp(b.y/VH,0,1)); // height = pitch
 function pluck(t,f,vel,pan,bright,bs){
   const ev=mkEvent(bs||A.bus.bloom,pan,.55,2200+bright*6000);
@@ -1233,53 +1172,82 @@ function pluck(t,f,vel,pan,bright,bs){
   [o,o2,o3].forEach(x=>{x.start(t);x.stop(t+dur+.05);});release(o,ev.nodes);
 }
 function bloomFire(b,t,first){
+  if(b.dying)return;
   const age=clamp((t-b.born)/b.life,0,1),fade=Math.pow(1-age,.6);
   if(fade<.03)return;
   const pan=clamp(b.x/VW*2-1,-1,1),bright=clamp(1-age*.7,.3,1),i=nearestIdx(bloomF(b));
-  const chosen=S.bloomSource==='random'
-    ?pick(SAMP.filter(s=>!s.dead&&!s.off&&s.level>.02))
-    :SAMP.find(s=>!s.dead&&!s.off&&s.id===S.bloomSource&&s.level>.02);
-  if(S.bloomSource!=='generated'&&chosen&&S.user>.02){
-    // A bloom can speak with one of your uploaded/recorded sources. Its position still controls stereo,
-    // and “In key” on that source can make a pitched recording follow the current world.
-    const rate=chosen.tune&&chosen.hz?clamp(ptf(i)/chosen.hz,.5,2):1;
-    playSample(chosen,t,{rate,pan,dist:.08,max:Math.min(5,Math.max(.8,chosen.buf.duration)),vel:.9*fade});
-  }else{
-    const motif=first?[0]:pick([[0],[0,1],[0,2],[0,-1,0],[0,2,1],[0,1,2,1],[0,0]]);
-    let tt=t;
-    motif.forEach(st=>{pluck(tt,ptf(i+st),.17*fade*(.7+.3*Math.random()),pan,bright);tt+=rand(.17,.32);});
-  }
+  const motif=first?[0]:pick([[0],[0,1],[0,2],[0,-1,0],[0,2,1],[0,1,2,1],[0,0]]);
+  let tt=t;
+  motif.forEach(st=>{pluck(tt,ptf(i+st),.17*fade*(.7+.3*Math.random()),pan,bright);tt+=rand(.17,.32);});
   b.pulse=1;
+  const cands=SAMP.filter(s=>!s.dead&&!s.off&&s.mode==='scatter'&&s.level>.02);
+  if(cands.length&&S.user>.02&&Math.random()<.3){ // your own sounds join in, tuned to the bloom
+    const s=pick(cands);
+    playSample(s,t,{rate:s.hz?clamp(ptf(i)/s.hz,.5,2):tunedRate(s),pan,dist:.1,max:3.5,vel:.7});
+  }
   for(const o of BL){ // neighbours hear it and may answer
-    if(o===b)continue;
+    if(o===b||o.dying)continue;
     const d=Math.hypot(o.x-b.x,o.y-b.y),prox=Math.exp(-d/(Math.min(VW,VH)*.45));
     if(Math.random()<.4*prox){const ba=b,bb=o;o.next=Math.min(o.next,t+rand(.5,1.5)+d/VW);later(t,()=>viz.links.push({a:ba,b:bb,life:1}));}
   }
 }
-function plantBloom(x,y){
-  if(!ctx||!running)return;
-  const t=ctx.currentTime,b={x,y,born:t,life:rand(170,260),next:t+rand(3,5),pulse:1,seed:Math.random()*TAU};
-  BL.push(b);if(BL.length>10)BL.shift();
+function plantBloom(x,y,o){
+  o=o||{};
+  if(!ctx||!running)return null;
+  const t=ctx.currentTime,b={id:++bloomSeq,x,y,born:t,life:o.life||rand(170,260),next:t+rand(3,5),pulse:1,seed:Math.random()*TAU,dying:0};
+  BL.push(b);
+  while(BL.filter(q=>!q.dying).length>10)removeBloom(BL.find(q=>!q.dying),true); // the oldest makes room
   bloomFire(b,t+.04,true);
-  if(firstBloom){firstBloom=false;toast('A bloom! Tap it to feed it, drag it to move it.');}
+  if(firstBloom&&!o.quiet){firstBloom=false;toast('A bloom! Tap it to feed it, drag it to move it, hold it to let it go.');}
+  return b;
+}
+function removeBloom(b,quiet){ // fades away with a soft falling note
+  if(!b||b.dying)return;
+  if(!ctx||!running){const i=BL.indexOf(b);if(i>=0)BL.splice(i,1);return;}
+  const t=ctx.currentTime;b.dying=t;
+  if(!quiet){
+    const pan=clamp(b.x/VW*2-1,-1,1),i=nearestIdx(bloomF(b)),hue=150+170*(1-clamp(b.y/VH,0,1));
+    pluck(t+.02,ptf(i),.11,pan,.45);pluck(t+.2,ptf(Math.max(0,i-2)),.07,pan,.3);
+    later(t,()=>ring(b.x,b.y,hue));
+  }
+}
+let bloomTimers=[];
+function clearBlooms(){
+  bloomTimers.forEach(clearTimeout);bloomTimers=[];
+  BL.filter(b=>!b.dying).forEach((b,i)=>bloomTimers.push(setTimeout(()=>removeBloom(b,i>3),i*110)));
+}
+// replace every bloom with a saved set: [[x,y,seconds of life], …] with x,y as fractions of the screen
+function setBlooms(list){
+  clearBlooms();
+  (list||[]).slice(0,10).forEach((q,i)=>bloomTimers.push(setTimeout(()=>{
+    if(running)plantBloom(clamp(+q[0]||0,.02,.98)*VW,clamp(+q[1]||0,.05,.9)*VH,{quiet:true,life:q[2]>20?+q[2]:undefined});
+  },(BL.length?750:150)+i*650)));
+}
+let bloomSig=null;
+function bloomRows(){
+  const box=$('#bloomList');if(!box)return;
+  const alive=BL.filter(b=>!b.dying);
+  const sig=alive.map(b=>b.id+noteName(ptf(nearestIdx(bloomF(b))))).join('|');
+  if(sig===bloomSig)return;bloomSig=sig;
+  box.innerHTML='';
+  if(!alive.length){const p=document.createElement('p');p.className='legend';p.textContent='No blooms yet. Hold a finger on the world to plant one.';box.appendChild(p);return;}
+  alive.forEach((b,i)=>{
+    const row=document.createElement('div');row.className='recrow';
+    const nm=document.createElement('span');nm.textContent='Bloom '+(i+1)+' · '+noteName(ptf(nearestIdx(bloomF(b))));row.appendChild(nm);
+    chip(row,'Hear',()=>{if(live()&&!b.dying){bloomFire(b,ctx.currentTime+.03,true);}});
+    chip(row,'Remove',()=>{if(!b.dying){removeBloom(b);bloomSig=null;setTimeout(bloomRows,60);}});
+    box.appendChild(row);
+  });
 }
 function feedBloom(b){
+  if(b.dying)return;
   const t=ctx.currentTime;
   b.life=Math.min(b.life+45,(t-b.born)+300);b.next=t+rand(2,4);bloomFire(b,t+.03,true);
-}
-function removeBloom(b){
-  const i=BL.indexOf(b);
-  if(i<0)return;
-  BL.splice(i,1);
-  for(let k=viz.links.length-1;k>=0;k--){
-    const l=viz.links[k];
-    if(l.a===b||l.b===b)viz.links.splice(k,1);
-  }
-  toast('Bloom removed');
 }
 function bloomsTick(t,dt){
   for(let k=BL.length-1;k>=0;k--){
     const b=BL[k];
+    if(b.dying){if(t-b.dying>.9)BL.splice(k,1);continue;}
     if(t-b.born>b.life){BL.splice(k,1);continue;}
     b.pulse*=Math.exp(-dt/.5);
     if(t<b.next)continue;
@@ -1379,19 +1347,49 @@ async function setWL(on){
   }catch(e){if(on){wantWL=false;toast('Keeping the screen on isn’t available here');}}
   $('#btnWL').classList.toggle('on',wantWL);
 }
-const MOODS=[
-  ['Dawn chorus',{base:.58,harmony:.72,enviro:.5,shards:.3,sparkle:.6,drone:.55,air:.4,water:.4,insects:.15,voices:.95,pulse:.25,space:.6,vitality:.85,blooms:.7},{phase:.26,storm:0}],
-  ['Deep night',{base:.9,harmony:.48,enviro:.62,shards:.22,sparkle:.12,drone:.85,air:.35,water:.5,insects:.85,voices:.6,pulse:.5,space:.7,vitality:.4,blooms:.6},{phase:.02,storm:0}],
-  ['Storm front',{base:.72,harmony:.38,enviro:.92,shards:.16,sparkle:.08,drone:.7,air:.85,water:.9,insects:.1,voices:.2,pulse:.5,space:.7,vitality:.75,blooms:.4},{phase:.62,storm:1}],
-  ['Still pond',{base:.46,harmony:.68,enviro:.55,shards:.42,sparkle:.52,drone:.4,air:.2,water:.8,insects:.45,voices:.4,pulse:.2,space:.85,vitality:.3,blooms:.8},{phase:.7,storm:0}],
-  ['Heartwood',{base:.98,harmony:.7,enviro:.42,shards:.28,sparkle:.2,drone:.95,air:.3,water:.3,insects:.3,voices:.3,pulse:.8,space:.85,vitality:.5,blooms:.5},{phase:.5,storm:0}]
+const BASE_MIX={drone:.7,flow:.6,grain:.55,shard:.5,glow:.5,air:.6,water:.6,insects:.65,voices:.65,pulse:.4,blooms:.65,space:.55,vitality:.55};
+// root = index into NOTE (0 A, 3 C, 5 D, 7 E, 8 F, 10 G) · phase = time of day (0–1) · blooms = [[x,y],…] as screen fractions
+const PRESETS=[
+  {n:'Dawn chorus',d:'Birds wake over a bright, rising bed.',root:5,mode:'Lydian',phase:.26,
+    mix:{drone:.45,flow:.6,grain:.5,shard:.45,glow:.7,air:.4,water:.4,insects:.15,voices:.95,pulse:.25,space:.6,vitality:.85,blooms:.7},blooms:[[.2,.32],[.74,.2]]},
+  {n:'Deep night',d:'Crickets, owls and a warm low drone.',root:0,mode:'Aeolian',phase:.02,
+    mix:{drone:.85,flow:.7,grain:.65,shard:.6,glow:.3,air:.35,water:.5,insects:.85,voices:.6,pulse:.5,space:.7,vitality:.4,blooms:.6}},
+  {n:'Storm front',d:'Rain, gusts and a heavy, dark drone.',root:3,mode:'Phrygian',phase:.62,storm:1,
+    mix:{drone:.7,flow:.5,grain:.75,shard:.25,glow:.15,air:.85,water:.9,insects:.1,voices:.2,pulse:.5,space:.7,vitality:.75,blooms:.4}},
+  {n:'Still pond',d:'Slow drips and a bright shimmer at dusk.',root:10,mode:'Major pentatonic',phase:.7,
+    mix:{drone:.35,flow:.55,grain:.6,shard:.5,glow:.75,air:.2,water:.8,insects:.45,voices:.4,pulse:.2,space:.85,vitality:.3,blooms:.8},blooms:[[.3,.42],[.55,.3],[.78,.5]]},
+  {n:'Heartwood',d:'A slow pulse under a deep, warm choir.',root:7,mode:'Dorian',phase:.5,
+    mix:{drone:.95,flow:.8,grain:.4,shard:.3,glow:.35,air:.3,water:.3,insects:.3,voices:.3,pulse:.8,space:.85,vitality:.5,blooms:.5}},
+  {n:'Meditation',d:'Deep drone and a slow choir, the world turned low.',root:8,mode:'Lydian',phase:.08,
+    mix:{drone:.9,flow:.85,grain:.65,shard:.35,glow:.45,air:.2,water:.2,insects:.1,voices:.1,pulse:.15,space:.85,vitality:.25,blooms:.3}},
+  {n:'Studio bed',d:'Layers only: a clean foundation to play over.',root:0,mode:'Dorian',phase:.55,nature:false,drift:12,
+    mix:{drone:.8,flow:.75,grain:.55,shard:.5,glow:.5,space:.7,vitality:.4,blooms:.5},blooms:[]},
+  {n:'Choir of stars',d:'A wide, bright choir under glittering night.',root:2,mode:'Lydian',phase:0,nature:false,
+    mix:{drone:.6,flow:.95,grain:.5,shard:.65,glow:.85,space:.85,vitality:.45,blooms:.5},blooms:[[.3,.2],[.7,.3]]},
+  {n:'Rainy window',d:'Steady rain, a soft choir, nothing sharp.',root:9,mode:'Aeolian',phase:.45,storm:1,
+    mix:{drone:.5,flow:.55,grain:.6,shard:.3,glow:.15,air:.3,water:.95,insects:0,voices:0,pulse:.1,space:.75,vitality:.3,blooms:.3}},
+  {n:'Lullaby',d:'Soft, slow and sleepy. Fades out after an hour.',root:3,mode:'Major pentatonic',phase:.95,sleep:60,
+    mix:{drone:.55,flow:.7,grain:.4,shard:.3,glow:.35,air:.15,water:.3,insects:.4,voices:.1,pulse:.25,space:.85,vitality:.12,blooms:.2}},
+  {n:'Slow drift',d:'The key wanders to a new place every few minutes.',root:0,mode:'Dorian',phase:.15,drift:3,
+    mix:{drone:.7,flow:.8,grain:.6,shard:.5,glow:.5,air:.25,water:.25,insects:.2,voices:.2,pulse:.2,space:.8,vitality:.4,blooms:.4}},
+  {n:'Glasshouse',d:'Bright, busy daytime with light, plucked notes.',root:3,mode:'Major pentatonic',phase:.5,
+    mix:{drone:.4,flow:.5,grain:.4,shard:.6,glow:.9,air:.3,water:.5,insects:.4,voices:.8,pulse:.1,space:.6,vitality:.7,blooms:.8},blooms:[[.2,.25],[.45,.45],[.8,.3],[.65,.18]]}
 ];
 function setFader(k,v){const f=faderEls[k];if(f){f.inp.value=v;f.fmt();}}
-function applyMood(s,w){
-  for(const k in s){S[k]=s[k];setFader(k,s[k]);}
-  W.glide=w.phase;
-  if(w.storm){W.stormT=90;W.nextStorm=300;}else{W.stormT=0;W.nextStorm=Math.max(W.nextStorm,240);}
-  save();applyLevels(false,2.5);
+let activePreset=null,activeScene=null;
+function applyPreset(p,idx){
+  const mix=Object.assign({},BASE_MIX,p.mix);
+  for(const k in mix){S[k]=mix[k];setFader(k,mix[k]);}
+  S.layers=p.layers!==false;S.nature=p.nature!==false;S.drift=p.drift||0;
+  S.keyLock=false;S.keyRoot=p.root;S.keyMode=p.mode;
+  applyKey(p.root,p.mode);
+  W.glide=p.phase;W.nextDrift=null;
+  if(p.storm){W.stormT=90;W.nextStorm=300;}else{W.stormT=0;W.nextStorm=Math.max(W.nextStorm,240);}
+  if(p.blooms)setBlooms(p.blooms);
+  if(p.sleep)setSleep(p.sleep);
+  save();refreshAmb();refreshDrift();refreshGroups();refreshKey();applyLevels(false,2.5);
+  activePreset=idx;activeScene=null;renderPresets();renderScenes();
+  toast(p.n+(S.ambient?'':' — Ambience is off, tap Ambience on to hear it'));
 }
 
 /* ============================================================
@@ -1408,39 +1406,132 @@ function driftKey(){
 }
 
 /* ---- scenes ---- */
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const clockOf=p=>{const x=(((+p||0)%1)+1)%1*24,hh=Math.floor(x)%24,mm=Math.floor((x-Math.floor(x))*60);return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');};
 let scenes=[];
 try{scenes=JSON.parse(localStorage.getItem('biome.scenes')||'[]');if(!Array.isArray(scenes))scenes=[];}catch(e){scenes=[];}
-const saveScenes=()=>{try{localStorage.setItem('biome.scenes',JSON.stringify(scenes));}catch(e){toast('Couldn’t store scenes in this browser');}};
-const SCENE_KEYS=['drone','air','water','insects','voices','pulse','blooms','user','keys','space','vitality','volume','dayMin','ambient','drift'];
-function captureScene(name){
-  const o={name,s:{},key:[W.rootSemi,W.modeName],phase:W.phase,sounds:{}};
+scenes=scenes.filter(o=>o&&o.s&&Array.isArray(o.key));
+scenes.forEach(o=>{if(!o.id)o.id=uid();});
+const saveScenes=()=>{try{localStorage.setItem('biome.scenes',JSON.stringify(scenes));return true;}catch(e){toast('Couldn’t store scenes in this browser');return false;}};
+const SCENE_KEYS=['drone','flow','grain','shard','glow','air','water','insects','voices','pulse','blooms','user','keys','space','vitality','volume','dayMin','ambient','layers','nature','drift'];
+function captureScene(name,keep){
+  const o={id:keep&&keep.id||uid(),name,saved:Date.now(),s:{},key:[W.rootSemi,W.modeName],lock:S.keyLock,phase:W.phase,sounds:{},blooms:[]};
   SCENE_KEYS.forEach(k=>{o.s[k]=S[k];});
   SAMP.forEach(s=>{o.sounds[s.id]={mode:s.mode,level:s.level,when:s.when,tune:s.tune,t0:s.t0,t1:s.t1,off:!!s.off};});
+  const t=ctx?ctx.currentTime:0;
+  BL.forEach(b=>{if(!b.dying)o.blooms.push([+(b.x/VW).toFixed(3),+(b.y/VH).toFixed(3),Math.max(60,Math.round(b.life-(t-b.born)))]);});
   return o;
 }
 function recallScene(o){
-  for(const k in o.s){if(k in S){S[k]=o.s[k];setFader(k,o.s[k]);}}
-  if(MODES[o.key[1]])setKey(o.key[0],o.key[1]);
+  for(const k in o.s){if(k in S&&typeof S[k]===typeof o.s[k]){S[k]=o.s[k];setFader(k,o.s[k]);}}
+  if(o.key&&MODES[o.key[1]]){
+    S.keyRoot=o.key[0];S.keyMode=o.key[1];S.keyLock=o.lock!==false;
+    applyKey(o.key[0],o.key[1]);
+  }
   W.glide=o.phase;W.nextDrift=null;
-  SAMP.forEach(s=>{
-    const c=o.sounds[s.id];
-    if(c)Object.assign(s,c);else s.off=true; // sounds added after the scene was saved stay quiet
-    if(s.refresh)s.refresh();persist(s);
+  const sn=o.sounds||{};
+  if(SAMP.some(s=>sn[s.id])){ // sounds the scene doesn't know about stay quiet; a scene from another device leaves yours alone
+    SAMP.forEach(s=>{
+      const c=sn[s.id];
+      if(c)Object.assign(s,c);else s.off=true;
+      if(s.refresh)s.refresh();persist(s);
+    });
+  }
+  if(Array.isArray(o.blooms))setBlooms(o.blooms);
+  save();refreshAmb();refreshDrift();refreshGroups();refreshKey();applyLevels(false,2.5);
+  activeScene=o.id;activePreset=null;renderPresets();renderScenes();
+  toast('Loaded “'+o.name+'”');
+}
+function renderPresets(){
+  const box=$('#presets');box.innerHTML='';
+  PRESETS.forEach((p,i)=>{
+    const b=document.createElement('button');b.className='pcard'+(activePreset===i?' on':'');
+    b.innerHTML='<b></b><small></small>';b.firstChild.textContent=p.n;b.lastChild.textContent=p.d;
+    b.addEventListener('click',()=>{if(live())applyPreset(p,i);});
+    box.appendChild(b);
   });
-  save();refreshAmb();refreshDrift();applyLevels(false,2.5);
-  toast('Scene: '+o.name);
+}
+// two-tap button: the first tap arms it, the second does it
+function guarded(parent,label,ask,fn){
+  const b=chip(parent,label,()=>{
+    if(b.dataset.arm){clearTimeout(+b.dataset.arm);delete b.dataset.arm;b.textContent=label;b.classList.remove('rec-on');fn();return;}
+    b.textContent=ask;b.classList.add('rec-on');
+    b.dataset.arm=setTimeout(()=>{delete b.dataset.arm;b.textContent=label;b.classList.remove('rec-on');},3200);
+  });
+  return b;
+}
+function startRename(o,nm){
+  const inp=document.createElement('input');inp.type='text';inp.value=o.name;inp.maxLength=40;
+  inp.setAttribute('autocomplete','off');inp.setAttribute('autocorrect','off');
+  nm.replaceWith(inp);inp.focus();try{inp.select();}catch(e){}
+  let done=false;
+  const fin=ok=>{
+    if(done)return;done=true;
+    if(ok){const v=inp.value.trim();if(v&&v!==o.name){o.name=v.slice(0,40);saveScenes();toast('Renamed to “'+o.name+'”');}}
+    renderScenes();
+  };
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')fin(true);else if(e.key==='Escape')fin(false);});
+  inp.addEventListener('blur',()=>fin(true));
 }
 function renderScenes(){
   const box=$('#scenes');box.innerHTML='';
-  if(!scenes.length){const p=document.createElement('p');p.className='legend';p.textContent='No scenes yet. Set up a world you like, then save it here.';box.appendChild(p);return;}
+  if(!scenes.length){const p=document.createElement('p');p.className='legend';p.textContent='No scenes yet. Set up a world you like, give it a name above and save it.';box.appendChild(p);return;}
   scenes.forEach((o,i)=>{
-    const row=document.createElement('div');row.className='recrow';
-    const nm=document.createElement('span');nm.textContent=o.name;row.appendChild(nm);
-    chip(row,'Recall',()=>{if(live())recallScene(o);});
-    chip(row,'Update',()=>{scenes[i]=captureScene(o.name);saveScenes();toast('Updated “'+o.name+'”');});
-    chip(row,'Delete',()=>{scenes.splice(i,1);saveScenes();renderScenes();});
-    box.appendChild(row);
+    const d=document.createElement('div');d.className='scn'+(o.id===activeScene?' on':'');
+    const top=document.createElement('div');top.className='top';
+    const nm=document.createElement('span');nm.className='nm';nm.textContent=o.name;
+    const meta=document.createElement('small');
+    const nb=Array.isArray(o.blooms)?o.blooms.length:0;
+    meta.textContent=(NOTE[o.key[0]]||'')+' '+o.key[1]+' · '+clockOf(o.phase)+(nb?' · '+nb+(nb>1?' blooms':' bloom'):'');
+    top.appendChild(nm);top.appendChild(meta);
+    const btns=document.createElement('div');btns.className='btns';
+    chip(btns,'Load',()=>{if(live())recallScene(o);});
+    guarded(btns,'Update','Overwrite?',()=>{
+      const n=captureScene(o.name,o);scenes[i]=n;
+      if(saveScenes()){activeScene=n.id;renderScenes();toast('Updated “'+n.name+'” with the current setup');}
+    });
+    chip(btns,'Rename',()=>startRename(o,nm));
+    chip(btns,'Duplicate',()=>{
+      if(scenes.length>=60){toast('That’s 60 scenes — delete one first');return;}
+      const c=JSON.parse(JSON.stringify(o));c.id=uid();c.name=(o.name+' copy').slice(0,40);
+      scenes.splice(i+1,0,c);saveScenes();renderScenes();
+    });
+    guarded(btns,'Delete','Really delete?',()=>{
+      scenes.splice(i,1);if(activeScene===o.id)activeScene=null;saveScenes();renderScenes();
+    });
+    d.appendChild(top);d.appendChild(btns);box.appendChild(d);
   });
+}
+function exportScenes(){
+  if(!scenes.length){toast('No scenes to export yet');return;}
+  const name='biome-scenes-'+stamp()+'.json',blob=new Blob([JSON.stringify({biome:1,scenes},null,1)],{type:'application/json'});
+  try{
+    const f=new File([blob],name,{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f]}).catch(()=>{});return;}
+  }catch(e){}
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+  toast('Saved '+name);
+}
+async function importScenes(file){
+  try{
+    const j=JSON.parse(await file.text());
+    const list=Array.isArray(j)?j:j&&Array.isArray(j.scenes)?j.scenes:null;
+    if(!list)throw new Error('format');
+    let n=0;
+    for(const o of list){
+      if(scenes.length>=60)break;
+      if(!o||typeof o!=='object'||!o.s||typeof o.s!=='object'||!Array.isArray(o.key)||!MODES[o.key[1]])continue;
+      const c={id:uid(),name:String(o.name||'Imported scene').slice(0,40),saved:Date.now(),s:{},key:[((o.key[0]|0)%12+12)%12,o.key[1]],lock:o.lock!==false,
+        phase:typeof o.phase==='number'?o.phase:.5,sounds:{},blooms:[]};
+      SCENE_KEYS.forEach(k=>{if(typeof o.s[k]===typeof S[k])c.s[k]=o.s[k];});
+      if(o.sounds&&typeof o.sounds==='object')for(const id in o.sounds){const q=o.sounds[id];if(q&&typeof q==='object')c.sounds[id]={mode:['cloud','scatter','bed'].includes(q.mode)?q.mode:'scatter',level:clamp(+q.level||0,0,1),when:['any','day','night'].includes(q.when)?q.when:'any',tune:!!q.tune,t0:clamp(+q.t0||0,0,.98),t1:clamp(q.t1==null?1:+q.t1,.02,1),off:!!q.off};}
+      if(Array.isArray(o.blooms))c.blooms=o.blooms.slice(0,10).map(q=>[clamp(+q[0]||0,0,1),clamp(+q[1]||0,0,1),clamp(+q[2]||180,20,400)]);
+      scenes.push(c);n++;
+    }
+    if(!n)throw new Error('empty');
+    saveScenes();renderScenes();toast('Imported '+n+(n>1?' scenes':' scene'));
+  }catch(e){toast('That file doesn’t look like a Biome scenes file');}
 }
 
 /* ---- keyboard ---- */
@@ -1501,7 +1592,7 @@ function kbOff(pid){
   KB.held.delete(pid);h.el.classList.remove('down');if(h.off)h.off();
 }
 function kbAnswer(){ // the creatures hear a phrase and sometimes echo it
-  if(!ctx||!running||!S.ambient||W.tension>.3||!KB.played.length){KB.played=[];return;}
+  if(!ctx||!running||!natOn()||W.tension>.3||!KB.played.length){KB.played=[];return;}
   const pl=KB.played.slice();KB.played=[];
   if(Math.random()>.5)return;
   const t=ctx.currentTime+.1;
@@ -1528,17 +1619,227 @@ function kbTick(t){ // recorded loop: each pass it forgets and mutates a little,
   }
 }
 
+/* ============================================================
+   Five layers — Core (the drone above) · Flow · Grain · Shard · Glow
+   ============================================================ */
+const VOWELS={a:[800,1150,2900],e:[400,1600,2700],i:[350,1700,2700],o:[450,800,2830],u:[325,700,2530]};
+const HANN=new Float32Array(48).map((_,i)=>.5-.5*Math.cos(TAU*i/47));
+const GV={wind:.5,water:.45,space:.35};
+let liveGG=0;
+function buildLayers(){buildFlow();buildGrain();buildShard();buildGlow();}
+
+/* ---- Flow: a choir-like pad; vowels morph, pitch and colour drift ---- */
+function buildFlow(){
+  const F={voices:[],vowel:'a',vt:0,acc:0};
+  F.sum=ctx.createGain();F.out=ctx.createGain();F.out.gain.value=0;
+  F.lfo=ctx.createOscillator();F.lfo.frequency.value=4.8;
+  F.vib=ctx.createGain();F.vib.gain.value=0;F.lfo.connect(F.vib);F.lfo.start();
+  F.fm=[0,1,2].map(i=>{
+    const bp=ctx.createBiquadFilter(),g=ctx.createGain();
+    bp.type='bandpass';bp.frequency.value=VOWELS.a[i];bp.Q.value=[6,8,10][i];g.gain.value=[1,.8,.45][i];
+    F.sum.connect(bp);bp.connect(g);g.connect(F.out);return bp;
+  });
+  const warm=ctx.createBiquadFilter(),wg=ctx.createGain();
+  warm.type='lowpass';warm.frequency.value=700;wg.gain.value=.5;
+  F.sum.connect(warm);warm.connect(wg);wg.connect(F.out);
+  const ns=noiseSrc(),ng=ctx.createGain();ng.gain.value=.05;ns.connect(ng);ng.connect(F.sum); // a little breath
+  F.lp=ctx.createBiquadFilter();F.lp.type='lowpass';F.lp.frequency.value=3000;F.lp.Q.value=.5;
+  F.out.connect(F.lp);F.lp.connect(A.bus.flow.in);
+  const spec=[{off:0,m:2,g:1},{off:2,m:4,g:.9},{off:4,m:4,g:.9},{off:0,m:8,g:.75},{off:4,m:8,g:.6}];
+  for(const sp of spec){
+    const vg=ctx.createGain();vg.gain.value=.045*sp.g;vg.connect(F.sum);
+    const oscs=[-1,1].map(sg=>{
+      const o=ctx.createOscillator();o.type='sawtooth';o.frequency.value=110;o.detune.value=sg*rand(5,10);
+      o.connect(vg);F.vib.connect(o.detune);o.start();return o;
+    });
+    F.voices.push({...sp,oscs,base:oscs.map(o=>o.detune.value),dr:[0,0]});
+  }
+  A.flow=F;
+}
+function flowTick(t,dt){
+  const F=A.flow;
+  for(const v of F.voices)for(let j=0;j<2;j++){ // slow, individual drifting detune
+    v.dr[j]=ou(v.dr[j],0,.05,3.5,dt);v.oscs[j].detune.setTargetAtTime(v.base[j]+v.dr[j],t,.5);
+  }
+  F.vib.gain.setTargetAtTime(2+7*W.energy,t,1.5);
+  F.lfo.frequency.setTargetAtTime(4.2+1.2*Math.sin(t*.05),t,1);
+  if(t>F.vt){F.vt=t+rand(14,34);F.vowel=pick(Object.keys(VOWELS).filter(x=>x!==F.vowel));}
+  F.acc+=dt;
+  if(F.acc>.4){
+    F.acc=0;const vw=VOWELS[F.vowel],sh=.9+.2*W.breath;
+    F.fm.forEach((bp,i)=>bp.frequency.setTargetAtTime(vw[i]*sh,t,3.5));
+  }
+  F.out.gain.setTargetAtTime((.35+.65*(.35+.65*W.breath))*(.75+.25*Math.sin(t*.08+1.3)),t,.8);
+  F.lp.frequency.setTargetAtTime(300+2800*(.3+.7*W.breath)*(.55+.45*W.light)*(.6+.4*W.energy),t,.6);
+}
+
+/* ---- Grain: wind, water and space made on the fly, then stretched into clouds ---- */
+function normBuf(b){
+  let m=0;for(let c=0;c<b.numberOfChannels;c++){const d=b.getChannelData(c);for(let i=0;i<d.length;i+=3){const v=Math.abs(d[i]);if(v>m)m=v;}}
+  const k=m>0?.7/m:1;for(let c=0;c<b.numberOfChannels;c++){const d=b.getChannelData(c);for(let i=0;i<d.length;i++)d[i]*=k;}
+}
+function genGrainBuffers(){
+  const sr=ctx.sampleRate,N=Math.floor(sr*7),mk=()=>ctx.createBuffer(2,N,sr);
+  const wind=mk(),water=mk(),space=mk();
+  for(let c=0;c<2;c++){
+    // wind: noise through a sweeping resonant band, shaped into gusts
+    let d=wind.getChannelData(c),low=0,band=0;const p1=rand(0,TAU),p2=rand(0,TAU);
+    for(let i=0;i<N;i++){
+      const t=i/sr,fc=380+520*(.5+.5*Math.sin(TAU*t/3.7+p1))+260*(.5+.5*Math.sin(TAU*t/1.3+p2));
+      const f=2*Math.sin(Math.PI*fc/sr),x=Math.random()*2-1,high=x-low-.35*band;
+      band+=f*high;low+=f*band;
+      d[i]=band*(.25+.75*Math.pow(.5+.5*Math.sin(TAU*t/5.1+p1*1.7),2));
+    }
+    // water: chirping bubbles over a faint trickle
+    d=water.getChannelData(c);
+    for(let e=0;e<150;e++){
+      const st=Math.floor(Math.random()*(N-9000)),f0=rand(350,2200),tau=rand(.012,.05),amp=rand(.2,1),L=Math.floor(sr*tau*5);
+      let ph=0;
+      for(let i=0;i<L;i++){const tt=i/sr;ph+=TAU*f0*(1+1.5*tt/tau)/sr;d[st+i]+=Math.sin(ph)*amp*Math.exp(-tt/tau)*(i<30?i/30:1);}
+    }
+    let prev=0;const pw=rand(0,TAU);
+    for(let i=0;i<N;i++){const n=Math.random()*2-1,hp=n-prev;prev=n;d[i]+=hp*.05*(.3+.7*(.5+.5*Math.sin(TAU*i/sr/.9+pw)));}
+    // space: slowly swelling harmonic shimmer (centred on 220 Hz so it can be retuned into key)
+    d=space.getChannelData(c);
+    const parts=[1,2,3,4,5,6,8].map(hm=>({hm,a:rand(.3,1)/Math.pow(hm,.6),p:rand(0,TAU),r:rand(.15,.5),p2:rand(0,TAU),dt:rand(.9985,1.0015)}));
+    for(let i=0;i<N;i++){
+      const t=i/sr;let s=0;
+      for(const q of parts){const sw=.5+.5*Math.sin(TAU*q.r*t+q.p2);s+=q.a*sw*sw*Math.sin(TAU*220*q.hm*q.dt*t+q.p);}
+      d[i]=s;
+    }
+  }
+  normBuf(wind);normBuf(water);normBuf(space);
+  return{wind,water,space};
+}
+function buildGrain(){A.grainL={buf:genGrainBuffers(),cur:{wind:rand(0,3),water:rand(0,3),space:rand(0,3)},acc:0,stretch:16};}
+function grainTick(t,dt){
+  const G=A.grainL;
+  G.stretch=lerp(10,30,.5+.5*Math.sin(t*.031));
+  for(const k in G.cur)G.cur[k]=(G.cur[k]+dt/G.stretch)%Math.max(.5,G.buf[k].duration-3.2);
+  G.acc+=(2.2+4.5*W.energy+2*W.wind)*(1-.6*W.tension)*dt;
+  while(G.acc>=1){G.acc-=1;if(liveGG<30)stretchGrain(t+Math.random()*dt+.03);}
+  if(G.acc>3)G.acc=0;
+}
+function stretchGrain(t){
+  const G=A.grainL,w=[.25+1.4*W.wind,.2+1.8*W.moisture,.35+.9*W.night+.4*W.energy];
+  let r=Math.random()*(w[0]+w[1]+w[2]),k=0;while(k<2&&(r-=w[k])>0)k++;
+  const key=['wind','water','space'][k],buf=G.buf[key],d=buf.duration,gl=rand(.8,2.6);
+  let rate=key==='wind'?rand(.45,.85):key==='water'?rand(.5,1):1;
+  if(key==='space')rate=clamp(ptf(pickIdx(100,520))/220,.45,2.4); // space clouds are tuned to the key
+  const lim=Math.max(0,d-gl*rate-.05),off=clamp(G.cur[key]+gauss()*.2,0,lim);
+  const ev=mkEvent(A.bus.grain,rand(-1,1),.55,key==='space'?5200:rand(1800,5200));
+  const src=ctx.createBufferSource();src.buffer=buf;src.playbackRate.value=rate;src.connect(ev.head);
+  const v=GV[key]*(.55+.45*W.breath)*rand(.7,1),c=new Float32Array(48);
+  for(let i=0;i<48;i++)c[i]=HANN[i]*v;
+  ev.head.gain.setValueCurveAtTime(c,t,gl);
+  src.start(t,off);src.stop(t+gl+.05);
+  liveGG++;src.onended=()=>{liveGG--;for(const n of ev.nodes){try{n.disconnect();}catch(e){}}};
+}
+
+/* ---- Shard: fragments of imagined songs that surface, echo and dissolve ---- */
+function buildShard(){
+  const Sh={mem:[],until:0},b=A.bus.shard;
+  const din=ctx.createGain();din.gain.value=.5;b.in.connect(din);
+  const dl=ctx.createDelay(2),dr=ctx.createDelay(2);dl.delayTime.value=.43;dr.delayTime.value=.67;
+  const lpl=ctx.createBiquadFilter(),lpr=ctx.createBiquadFilter(),gl=ctx.createGain(),gr=ctx.createGain();
+  lpl.type='lowpass';lpr.type='lowpass';lpl.frequency.value=2800;lpr.frequency.value=2100;gl.gain.value=.72;gr.gain.value=.72;
+  din.connect(dl);dl.connect(lpl);lpl.connect(gl);gl.connect(dr);dr.connect(lpr);lpr.connect(gr);gr.connect(dl); // ping-pong
+  const pl=mkPan(-.75),pr=mkPan(.75);dl.connect(pl);dr.connect(pr);pl.connect(b.dry);pr.connect(b.dry);
+  A.shard=Sh;
+}
+function shardNote(t,f,vel,pan,o){
+  const ev=mkEvent(A.bus.shard,pan,.75,1400+o.bright*5200);
+  const a=ctx.createOscillator(),b=ctx.createOscillator(),c=ctx.createOscillator(),gb=ctx.createGain(),gc=ctx.createGain();
+  a.type='sine';b.type='triangle';c.type='sine';
+  a.frequency.setValueAtTime(f*1.004,t);a.frequency.exponentialRampToValueAtTime(f,t+.25);
+  b.frequency.value=f*2.0;c.frequency.value=f*3.01;gb.gain.value=.22*o.bright;gc.gain.value=.07*o.bright;
+  a.connect(ev.head);b.connect(gb);gb.connect(ev.head);c.connect(gc);gc.connect(ev.head);ev.nodes.push(gb,gc);
+  const e=ev.head.gain;
+  e.setValueAtTime(0,t);e.linearRampToValueAtTime(vel,t+o.att);e.exponentialRampToValueAtTime(.0001,t+o.att+o.dur);
+  const end=t+o.att+o.dur+.05;a.start(t);b.start(t);c.start(t);a.stop(end);b.stop(end);c.stop(end);release(a,ev.nodes);
+}
+function shardPhrase(t){
+  const Sh=A.shard;let notes;
+  if(Sh.mem.length&&Math.random()<.4){ // an echo of a song heard before, changed a little
+    notes=pick(Sh.mem).map(n=>({...n}));
+    const m=pick(['shift','shift','reverse','fragment']);
+    if(m==='reverse')notes.reverse();
+    if(m==='fragment')notes=notes.slice(0,Math.max(2,notes.length-1-((Math.random()*2)|0)));
+    const sh=pick([-2,-1,1,2,3]);notes.forEach(n=>{n.i=clamp(n.i+sh,0,W.PT.length-1);});
+  }else{
+    const n=3+((Math.random()*5)|0);let i=pickIdx(260,1600);notes=[];
+    for(let k=0;k<n;k++){
+      notes.push({i,gap:rand(.18,.95),dur:rand(1.2,3.2),sw:Math.random()<.2});
+      i=clamp(i+pick([-3,-2,-1,-1,1,1,2,3]),0,W.PT.length-1);
+    }
+  }
+  Sh.mem.push(notes.map(n=>({...n})));if(Sh.mem.length>4)Sh.mem.shift();
+  const base=rand(-.7,.7),vel0=.11*(.7+.3*W.energy);let tt=t;
+  notes.forEach((n,k)=>{
+    const fade=Math.pow(.8,k); // each note a little quieter and darker: the phrase dissolves
+    if(Math.random()>.12){
+      const pan=clamp(base+rand(-.15,.15),-1,1),f=ptf(n.i);
+      shardNote(tt,f,vel0*fade,pan,{att:n.sw?rand(.5,1.1):rand(.02,.25),dur:n.sw?.6:n.dur,bright:clamp(1-k*.12,.2,1)});
+      later(tt,()=>noteDot(VW*(.5+.5*pan),VH*(.12+.3*(1-clamp(Math.log(f/260)/Math.log(7),0,1))),285+k*6));
+    }
+    tt+=n.gap;
+  });
+  Sh.until=tt+rand(3,9);
+}
+function shardTick(t,dt){
+  const Sh=A.shard;if(t<Sh.until)return;
+  const p=(.035+.09*W.energy)*(.55+.7*W.night+.5*W.dusk)*(1-.5*W.hush)*(1-.9*W.tension)*(1-.5*W.storm);
+  if(Math.random()<p*dt)shardPhrase(t+.1);
+}
+
+/* ---- Glow: sparkling tones flickering like light on water ---- */
+function buildGlow(){
+  const L={pad:[],shim:.3},hp=ctx.createBiquadFilter();
+  hp.type='highpass';hp.frequency.value=1500;L.out=ctx.createGain();L.out.connect(hp);hp.connect(A.bus.glow.in);
+  for(const sp of [{off:0,m:16},{off:2,m:16},{off:4,m:32},{off:0,m:32},{off:2,m:32},{off:4,m:64}]){
+    const o=ctx.createOscillator(),g=ctx.createGain(),p=mkPan(rand(-.9,.9));
+    o.type='sine';o.frequency.value=2000;g.gain.value=0;o.connect(g);g.connect(p);p.connect(L.out);o.start();
+    L.pad.push({...sp,o,g,fl:rand(0,1)});
+  }
+  A.glow=L;
+}
+function glint(x,y,f){viz.glints.push({x,y,life:1,s:rand(1.5,3.2),h:180+clamp((f-1800)/60,0,60)});if(viz.glints.length>90)viz.glints.shift();}
+function twinkle(t){
+  const f=ptf(pickIdx(1800,6200)),pan=rand(-1,1),ev=mkEvent(A.bus.glow,pan,.6,0);
+  const o=ctx.createOscillator(),o2=ctx.createOscillator(),g2=ctx.createGain();
+  o.type='sine';o2.type='sine';
+  o.frequency.setValueAtTime(f*rand(.995,1.005),t);o.frequency.exponentialRampToValueAtTime(f*rand(1,1.015),t+.1);
+  o2.frequency.value=f*2.01;g2.gain.value=.15;
+  o.connect(ev.head);o2.connect(g2);g2.connect(ev.head);ev.nodes.push(g2);
+  const dur=rand(.12,.55),v=rand(.025,.07),e=ev.head.gain;
+  e.setValueAtTime(0,t);e.linearRampToValueAtTime(v,t+.004);e.exponentialRampToValueAtTime(.0001,t+dur);
+  o.start(t);o2.start(t);o.stop(t+dur+.05);o2.stop(t+dur+.05);release(o,ev.nodes);
+  later(t,()=>glint(VW*(.5+.5*pan),VH*rand(.855,.97),f));
+}
+function glowTick(t,dt){
+  const L=A.glow;
+  L.shim=clamp(ou(L.shim,.3,.1,.35,dt),0,1); // glitter comes in bursts
+  const lightF=.35+.65*W.light,calm=(1-.8*W.storm)*(1-.7*W.tension);
+  for(const p of L.pad){ // each partial flickers on its own
+    p.fl=ou(p.fl,.45,2.4,1.6,dt);
+    const a=Math.pow(clamp(p.fl,0,1),2);
+    p.g.gain.setTargetAtTime(.011*a*lightF*calm*(.5+.5*L.shim),t,.05);
+  }
+  const rate=(.5+5.5*sq(L.shim))*lightF*calm*(.4+.6*W.energy);
+  if(Math.random()<rate*dt)twinkle(t+.03+Math.random()*dt);
+}
+
 /* ---- touch ---- */
 let taps=[];
 function touchDrop(x,y){
   if(!ctx||!running)return;
   const t=ctx.currentTime+.03,now=performance.now();
   const f=ptf(nearestIdx(lerp(3200,520,clamp(y/VH,0,1))));
-  if(S.ambient)drip(t,x/VW*2-1,.17,f,true,{x,y});
+  if(natOn())drip(t,x/VW*2-1,.17,f,true,{x,y});
   else{pluck(t,f,.14,x/VW*2-1,.6);later(t,()=>ripple(x,y,170+f*.02));} // ambience off: a soft note instead of water
   taps.push(now);taps=taps.filter(s=>now-s<1600);
   if(taps.length>=5){startle();taps=[];return;}
-  if(S.ambient&&Math.random()<.6*(1-W.tension)){ // curious creature answers the touch
+  if(natOn()&&Math.random()<.6*(1-W.tension)){ // curious creature answers the touch
     if(W.light>.35){
       const b=W.birds.slice().sort((a,c)=>Math.abs(a.pan-(x/VW*2-1))-Math.abs(c.pan-(x/VW*2-1)))[0];
       let i=nearestIdx(clamp(f*2,1500,4800));const ph=[];
@@ -1567,7 +1868,7 @@ function resize(){
 }
 addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,200));resize();
 
-const viz={heart:0,flash:0,ripples:[],flies:[],notes:[],rings:[],links:[],spec:new Float32Array(40)};
+const viz={heart:0,flash:0,ripples:[],flies:[],notes:[],rings:[],links:[],glints:[],spec:new Float32Array(40)};
 const stars=Array.from({length:90},()=>({x:Math.random(),y:Math.random()*.55,s:rand(.5,1.6),p:rand(0,TAU)}));
 const streaks=Array.from({length:50},()=>({x:Math.random(),y:Math.random(),l:rand(40,140),v:rand(.5,1.4)}));
 const drops=Array.from({length:140},()=>({x:Math.random(),y:Math.random(),l:rand(8,18),v:rand(.8,1.4)}));
@@ -1657,6 +1958,15 @@ function draw(ts){
     if(r.a<=0){viz.rings.splice(i,1);continue;}
     g2.strokeStyle=`hsla(${r.h},60%,70%,${r.a*.5})`;g2.lineWidth=2;g2.beginPath();g2.arc(r.x,r.y,r.r,0,TAU);g2.stroke();
   }
+  // glints: light on the water
+  for(let i=viz.glints.length-1;i>=0;i--){
+    const q=viz.glints[i];q.life-=dt*2.4;
+    if(q.life<=0){viz.glints.splice(i,1);continue;}
+    const r=q.s*(.6+.8*q.life);
+    g2.fillStyle=`hsla(${q.h},90%,85%,${q.life*.9})`;
+    g2.fillRect(q.x-r*3,q.y-.6,r*6,1.2);g2.fillRect(q.x-.6,q.y-r*1.2,1.2,r*2.4);
+    g2.beginPath();g2.arc(q.x,q.y,r*.6,0,TAU);g2.fill();
+  }
   // blooms: creatures you planted
   for(let i=viz.links.length-1;i>=0;i--){
     const l=viz.links[i];l.life-=dt*1.3;
@@ -1664,10 +1974,11 @@ function draw(ts){
     g2.strokeStyle=`rgba(190,255,225,${l.life*.35})`;g2.lineWidth=1;
     g2.beginPath();g2.moveTo(l.a.x,l.a.y);g2.quadraticCurveTo((l.a.x+l.b.x)/2,Math.min(l.a.y,l.b.y)-40*l.life,l.b.x,l.b.y);g2.stroke();
   }
-  const nowT=ctx?ctx.currentTime:0;
+  const nowT=ctx?ctx.currentTime:0,panelOpen=panel.classList.contains('open');
   for(const b of BL){
-    const age=clamp((nowT-b.born)/b.life,0,1),fade=Math.pow(1-age,.5),hue=150+170*(1-clamp(b.y/VH,0,1));
-    const r=9+7*b.pulse+3*Math.sin(ts*.002+b.seed);
+    const dk=b.dying?clamp(1-(nowT-b.dying)/.9,0,1):1;
+    const age=clamp((nowT-b.born)/b.life,0,1),fade=Math.pow(1-age,.5)*dk,hue=150+170*(1-clamp(b.y/VH,0,1));
+    const r=(9+7*b.pulse+3*Math.sin(ts*.002+b.seed))*(.4+.6*dk);
     const rg=g2.createRadialGradient(b.x,b.y,0,b.x,b.y,r*4.5);
     rg.addColorStop(0,`hsla(${hue},85%,70%,${(.5+.4*b.pulse)*fade})`);rg.addColorStop(1,`hsla(${hue},85%,60%,0)`);
     g2.fillStyle=rg;g2.fillRect(b.x-r*4.5,b.y-r*4.5,r*9,r*9);
@@ -1678,6 +1989,14 @@ function draw(ts){
     }
     g2.strokeStyle=`hsla(${hue},80%,75%,${.3*fade})`;g2.lineWidth=1.2;
     g2.beginPath();g2.arc(b.x,b.y,r*2.6,-Math.PI/2,-Math.PI/2+TAU*(1-age));g2.stroke();
+    if(ptr.rmBloom===b&&ptr.rmT0){ // letting go: a ring fills while you hold
+      const p=clamp((performance.now()-ptr.rmT0)/RMHOLD,0,1);
+      if(p>.1){g2.strokeStyle=`rgba(255,150,130,${.25+.6*p})`;g2.lineWidth=2.4;g2.beginPath();g2.arc(b.x,b.y,r*2.6+9,-Math.PI/2,-Math.PI/2+TAU*p);g2.stroke();}
+    }
+    if(panelOpen&&!b.dying){
+      g2.fillStyle=`rgba(230,245,240,${.85*fade})`;g2.font='600 13px -apple-system,system-ui,sans-serif';g2.textAlign='center';
+      g2.fillText(String(BL.filter(q=>!q.dying).indexOf(b)+1),b.x,b.y-r*2.6-8);
+    }
   }
   if(ptr.down&&ptr.holdT0&&!ptr.moved){ // hold-to-plant ring
     const p=clamp((performance.now()-ptr.holdT0)/HOLD,0,1);
@@ -1749,7 +2068,9 @@ function updateHud(){
   let extra='';
   if(rec)extra+=' · ● rec '+Math.floor((Date.now()-rec.t0)/1000)+'s';
   if(sleepEnd&&ctx)extra+=' · sleep '+Math.max(1,Math.ceil((sleepEnd-ctx.currentTime)/60))+'m';
-  if(BL.length)extra+=' · '+BL.length+(BL.length>1?' blooms':' bloom');
+  const nb=BL.filter(b=>!b.dying).length;
+  if(nb)extra+=' · '+nb+(nb>1?' blooms':' bloom');
+  bloomRows();
   if(KB.loop)extra+=' · loop';
   if(KB.on&&!KB.held.size&&kbSignature()!==kbSig)buildKeys();
   $('#mood').textContent=`${clock} · ${st} · breath ${W.per.toFixed(1)}s${extra}`;
@@ -1760,19 +2081,21 @@ function updateHud(){
    UI
    ============================================================ */
 const FADERS=[
-  ['base','Base','deep evolving drones',0,1,.01],
-  ['harmony','Harmony','drifting choir / instrument',0,1,.01],
-  ['enviro','Enviro','stretched air, water & space',0,1,.01],
-  ['shards','Shards','fleeting melodic fragments',0,1,.01],
-  ['sparkle','Sparkle','high crystalline tones',0,1,.01],
-  ['drone','Drone','ecosystem pad & sub',0,1,.01],['air','Air','wind & whistle',0,1,.01],
-  ['water','Water','drips & rain',0,1,.01],['insects','Insects','chorus',0,1,.01],
-  ['voices','Voices','birds & owls',0,1,.01],['pulse','Pulse','heartbeat',0,1,.01],
-  ['space','Space','reverb',0,1,.01],['vitality','Vitality','how alive it feels',0,1,.01],
+  ['drone','Core','deep evolving drones',0,1,.01],
+  ['flow','Flow','choir-like harmonic bed',0,1,.01],
+  ['grain','Grain','stretched wind, water & space',0,1,.01],
+  ['shard','Shard','fleeting melodic fragments',0,1,.01],
+  ['glow','Glow','sparkle on water',0,1,.01],
+  ['air','Air','wind & whistle',0,1,.01],['water','Water','drips & rain',0,1,.01],
+  ['insects','Insects','chorus',0,1,.01],['voices','Voices','birds & owls',0,1,.01],['pulse','Pulse','heartbeat',0,1,.01],
   ['blooms','Blooms','planted by touch',0,1,.01],['user','Your sounds','uploaded & recorded',0,1,.01],['keys','Keyboard','in-key notes',0,1,.01],
-  ['volume','Volume','',0,1,.01],['dayMin','Day length','one full day',2,60,1],
+  ['space','Space','reverb',0,1,.01],['vitality','Vitality','how alive it feels',0,1,.01],['volume','Volume','',0,1,.01],
+  ['dayMin','Day length','one full day',2,60,1],
   ['time','Time of day','',0,24,.05]
 ];
+const FBOX={drone:'#f-layers',flow:'#f-layers',grain:'#f-layers',shard:'#f-layers',glow:'#f-layers',
+  air:'#f-nature',water:'#f-nature',insects:'#f-nature',voices:'#f-nature',pulse:'#f-nature',
+  blooms:'#f-played',user:'#f-played',keys:'#f-played',dayMin:'#wfaders',time:'#wfaders'};
 const faderEls={};
 FADERS.forEach(([k,name,sub,min,max,step])=>{
   const l=document.createElement('label');l.className='fader';
@@ -1790,7 +2113,7 @@ FADERS.forEach(([k,name,sub,min,max,step])=>{
   });
   const dn=()=>{dragging=k;},up=()=>{dragging=null;};
   inp.addEventListener('pointerdown',dn);inp.addEventListener('pointerup',up);inp.addEventListener('pointercancel',up);
-  $(k==='time'||k==='dayMin'?'#wfaders':'#faders').appendChild(l);faderEls[k]={inp,fmt};
+  $(FBOX[k]||'#f-global').appendChild(l);faderEls[k]={inp,fmt};
 });
 const panel=$('#panel');
 $('#btnMix').addEventListener('click',()=>{const o=panel.classList.toggle('open');$('#btnMix').classList.toggle('on',o);hideHint();});
@@ -1826,7 +2149,12 @@ function switchTab(n){
 $$('.tab').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.t)));
 function chip(parent,label,fn){const b=document.createElement('button');b.className='pill sm';b.textContent=label;b.addEventListener('click',fn);parent.appendChild(b);return b;}
 const live=()=>{if(!ctx||!running){toast('Wake the world first');return false;}return true;};
-MOODS.forEach(([n,s,w])=>chip($('#moods'),n,()=>{if(live()){applyMood(s,w);toast(n);}}));
+chip($('#bloomOpts'),'Plant a bloom',()=>{if(live())plantBloom(rand(.15,.85)*VW,rand(.18,.7)*VH);});
+chip($('#bloomOpts'),'Clear all blooms',()=>{
+  if(!BL.some(b=>!b.dying)){toast('There are no blooms to clear');return;}
+  clearBlooms();setTimeout(bloomRows,400);toast('Letting the blooms go');
+});
+renderPresets();
 [
   ['Gust',()=>{W.gustTarget=1;W.gustPhase=1;W.gustT=rand(24,40);}],
   ['Rain',()=>{W.stormT=75;W.nextStorm=Math.max(W.nextStorm,280);}],
@@ -1848,7 +2176,7 @@ fileIn.addEventListener('change',async()=>{const l=Array.from(fileIn.files||[]);
 document.addEventListener('dragover',e=>e.preventDefault());
 document.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length)handleFiles(e.dataTransfer.files);});
 
-// ---- canvas touch: tap = water drop · hold = plant a bloom · double-tap = remove a bloom · drag = stir the wind · touch a bloom to feed / move it ----
+// ---- canvas touch: tap = water drop · hold = plant a bloom · drag = stir the wind · touch a bloom to feed / move it ----
 function refreshKey(){
   rootBtns.forEach((b,i)=>b.classList.toggle('on',i===W.rootSemi));
   modeBtns.forEach(([m,b])=>b.classList.toggle('on',m===W.modeName));
@@ -1879,17 +2207,28 @@ chip($('#drifts'),'Drift now',()=>{if(live())driftKey();});
 refreshDrift();
 
 $('#btnSceneSave').addEventListener('click',()=>{
-  if(!ctx){toast('Tap Awaken first');return;}
-  const def=NOTE[W.rootSemi]+' '+W.modeName;
-  let name=def;
-  try{name=prompt('Name this scene',def);}catch(e){name=def;}
-  if(name===null)return;
-  name=(name.trim()||def).slice(0,40);
-  if(scenes.length>=24)scenes.shift();
-  scenes.push(captureScene(name));saveScenes();renderScenes();toast('Saved “'+name+'”');
+  const inp=$('#sceneName');
+  let name=inp.value.trim().slice(0,40);
+  if(!name)name=NOTE[W.rootSemi]+' '+W.modeName+' · '+clockOf(W.phase);
+  if(scenes.length>=60){toast('That’s 60 scenes — delete one first');return;}
+  const o=captureScene(name);scenes.push(o);
+  if(!saveScenes()){scenes.pop();return;}
+  activeScene=o.id;activePreset=null;inp.value='';inp.blur();
+  renderPresets();renderScenes();toast('Saved “'+name+'”');
 });
+$('#sceneName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#btnSceneSave').click();}});
+$('#btnSceneExport').addEventListener('click',exportScenes);
+const sceneIn=$('#sceneImport');
+sceneIn.addEventListener('change',async()=>{const f=sceneIn.files&&sceneIn.files[0];sceneIn.value='';if(f)await importScenes(f);});
 renderScenes();
 addEventListener('resize',()=>requestAnimationFrame(redrawWaves));
+function refreshGroups(){
+  gLayers.classList.toggle('on',S.layers);gLayers.textContent=S.layers?'Five layers on':'Five layers off';
+  gNature.classList.toggle('on',S.nature);gNature.textContent=S.nature?'Nature on':'Nature off';
+}
+const gLayers=chip($('#grpchips'),'',()=>{S.layers=!S.layers;save();refreshGroups();applyLevels(false,2);});
+const gNature=chip($('#grpchips'),'',()=>{S.nature=!S.nature;save();refreshGroups();applyLevels(false,2);});
+refreshGroups();
 
 function setKb(on){
   KB.on=on;$('#kbd').classList.toggle('open',on);$('#btnKeys').classList.toggle('on',on);
@@ -1933,32 +2272,27 @@ kbBox.addEventListener('pointermove',e=>{
 const kbUp=e=>kbOff(e.pointerId);
 kbBox.addEventListener('pointerup',kbUp);kbBox.addEventListener('pointercancel',kbUp);kbBox.addEventListener('lostpointercapture',kbUp);
 
-const HOLD=480;
-const ptr={down:false,x:0,y:0,t:0,x0:0,y0:0,moved:false,hold:null,holdT0:0,grab:null,pid:-1};
-let lastBloomTap=null;
+const HOLD=480,RMHOLD=700;
+const ptr={down:false,x:0,y:0,t:0,x0:0,y0:0,moved:false,hold:null,holdT0:0,grab:null,pid:-1,rm:null,rmT0:0,rmBloom:null};
 const clearHold=()=>{if(ptr.hold){clearTimeout(ptr.hold);ptr.hold=null;}ptr.holdT0=0;};
+const clearRm=()=>{if(ptr.rm){clearTimeout(ptr.rm);ptr.rm=null;}ptr.rmT0=0;ptr.rmBloom=null;};
 cv.addEventListener('pointerdown',e=>{
-  clearHold();
+  clearHold();clearRm();
   ptr.down=true;ptr.pid=e.pointerId;ptr.x=ptr.x0=e.clientX;ptr.y=ptr.y0=e.clientY;ptr.t=performance.now();ptr.moved=false;ptr.grab=null;
   try{cv.setPointerCapture(e.pointerId);}catch(_){}
   if(panel.classList.contains('open')){panel.classList.remove('open');$('#btnMix').classList.remove('on');}
   hideHint();
   if(!ctx||!running)return;
-  const hit=BL.find(b=>Math.hypot(b.x-ptr.x,b.y-ptr.y)<56);
-  if(hit){
-    const now=performance.now();
-    const isDouble=lastBloomTap&&lastBloomTap.b===hit&&now-lastBloomTap.t<360&&Math.hypot(lastBloomTap.x-ptr.x,lastBloomTap.y-ptr.y)<56;
-    if(isDouble){
-      lastBloomTap=null;
-      removeBloom(hit);
-      return;
-    }
-    lastBloomTap={b:hit,t:now,x:ptr.x,y:ptr.y};
-    ptr.grab=hit;
-    feedBloom(hit);
+  const hit=BL.find(b=>!b.dying&&Math.hypot(b.x-ptr.x,b.y-ptr.y)<56);
+  if(hit){ // tap = feed · drag = move · hold = let it go
+    ptr.grab=hit;feedBloom(hit);
+    ptr.rmT0=performance.now();ptr.rmBloom=hit;
+    ptr.rm=setTimeout(()=>{
+      const b=ptr.rmBloom;ptr.rm=null;ptr.rmT0=0;ptr.rmBloom=null;
+      if(ptr.down&&!ptr.moved&&b&&ptr.grab===b){ptr.grab=null;removeBloom(b);}
+    },RMHOLD);
     return;
   }
-  lastBloomTap=null;
   touchDrop(ptr.x,ptr.y);
   ptr.holdT0=performance.now();
   ptr.hold=setTimeout(()=>{ptr.hold=null;if(ptr.down&&!ptr.moved&&!ptr.grab){plantBloom(ptr.x0,ptr.y0);ptr.holdT0=0;}},HOLD);
@@ -1966,8 +2300,10 @@ cv.addEventListener('pointerdown',e=>{
 cv.addEventListener('pointermove',e=>{
   if(!ptr.down||e.pointerId!==ptr.pid)return;
   const n=performance.now(),dt=Math.max(8,n-ptr.t),dx=e.clientX-ptr.x,dy=e.clientY-ptr.y;
-  if(ptr.grab){ptr.grab.x=e.clientX;ptr.grab.y=e.clientY;}
-  else{
+  if(ptr.grab){
+    if(!ptr.moved&&Math.hypot(e.clientX-ptr.x0,e.clientY-ptr.y0)>14){ptr.moved=true;clearRm();}
+    if(ptr.moved){ptr.grab.x=e.clientX;ptr.grab.y=e.clientY;}
+  }else{
     if(Math.hypot(e.clientX-ptr.x0,e.clientY-ptr.y0)>14){ptr.moved=true;clearHold();}
     W.touchWind=clamp(Math.max(W.touchWind,Math.hypot(dx,dy)/dt*.5),0,1);
   }
@@ -1975,8 +2311,8 @@ cv.addEventListener('pointermove',e=>{
 });
 const pup=e=>{
   if(e&&ptr.down&&e.pointerId!==ptr.pid)return;
-  if(ptr.grab&&ctx&&running)bloomFire(ptr.grab,ctx.currentTime+.03,true);
-  clearHold();ptr.grab=null;ptr.down=false;
+  if(ptr.grab&&ptr.moved&&ctx&&running)bloomFire(ptr.grab,ctx.currentTime+.03,true);
+  clearHold();clearRm();ptr.grab=null;ptr.down=false;
 };
 cv.addEventListener('pointerup',pup);cv.addEventListener('pointercancel',pup);
 
@@ -2002,11 +2338,11 @@ function start(){
   try{ // unlock iOS: tiny buffer + silent looping <audio> so the mute switch / lock screen don't cut us off
     const b=ctx.createBuffer(1,1,22050),s=ctx.createBufferSource();s.buffer=b;s.connect(ctx.destination);s.start(0);
     const a=new Audio(silentWavURL());a.loop=true;a.setAttribute('playsinline','');a.play().catch(()=>{});A.keep=a;
-    if('mediaSession' in navigator){try{if(window.MediaMetadata)navigator.mediaSession.metadata=new MediaMetadata({title:'Everlast',artist:'An evolving living soundscape'});navigator.mediaSession.setActionHandler('play',()=>wake());navigator.mediaSession.setActionHandler('pause',()=>rest());}catch(e){}}
+    if('mediaSession' in navigator){try{if(window.MediaMetadata)navigator.mediaSession.metadata=new MediaMetadata({title:'Biome',artist:'A living soundscape'});navigator.mediaSession.setActionHandler('play',()=>wake());navigator.mediaSession.setActionHandler('pause',()=>rest());}catch(e){}}
   }catch(e){}
   Promise.resolve(rp).catch(()=>{}).then(()=>{
     try{
-      build();newWorld(true);refreshKey();refreshBloomSources();restoreSamples();
+      build();newWorld(true);refreshKey();restoreSamples();
       W.nextBeat=ctx.currentTime+.5;lastT=ctx.currentTime;running=true;applyLevels(true);
       try{
         const blob=new Blob(['setInterval(function(){postMessage(0)},40)'],{type:'text/javascript'});
