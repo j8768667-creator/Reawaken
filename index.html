@@ -181,13 +181,18 @@ input[type=text]:focus{outline:none;border-color:rgba(143,227,200,.7)}
     <div class="row" style="margin-top:0">
       <label class="pill big" for="file">+ Add sounds…</label>
       <button class="pill big" id="btnMic">● Record a sound</button>
+      <button class="pill big" id="btnResample">● Resample the world</button>
     </div>
+    <div class="row"><div class="seg" id="rsSrc" style="margin:0"><button data-v="all" class="on">Capture everything</button><button data-v="mine">Just your sounds</button></div></div>
     <input class="file" type="file" id="file" multiple>
     <p class="legend">Choose any audio file, drag files in from Files, or record with the mic. Your sounds become part of the ecosystem.
       New sounds are tidied automatically: silence trimmed, clicks softened, loudness matched.
       <b>Play</b> keeps a song or speech as it is, with a transport and a playlist, and the ambience eases under it.
       <b>Transform</b> melts it into the world: <b>Cloud</b> (granular), <b>Freeze</b> (one held moment), <b>Stretch</b> (slowed many times),
       <b>Bed</b> (slow loop), <b>Scatter</b> (like a creature), <b>Swell</b> (one long breath), <b>Slice</b> (fragments at its natural breaks) and <b>Pulse</b> (on the heartbeat).
+      <b>Choir</b> finds the held vowels or notes and sings them on the current chord. <b>Dissolve</b> blurs a sound from recognisable to a wash.
+      Songs with a clear tempo show it; Pulse, Slice and Scatter can play <b>on the beat</b>, and the heartbeat can follow the song.
+      <b>Resample</b> records what you hear (or just your sounds) and adds it back as a new sound.
       <b>In key</b> retunes it to the current scale. Tap a slider's value to reset it. Planted blooms also borrow your Scatter sounds.</p>
     <div id="samples"></div>
     <p class="legend" id="nosamp">Nothing here yet. Add a sound above.</p>
@@ -836,7 +841,10 @@ function tick(){
       const tb=Math.max(W.nextBeat,t+.03),v=.5*(.8+.2*W.night);
       thump(tb,v);thump(tb+.23,v*.7);W.lastBeat=tb;later(tb,()=>{viz.heart=1;});
       const bpm=(34+36*W.energy)*(1+.08*(W.breath-.5));
-      W.nextBeat=tb+60/bpm;
+      let nx=tb+60/bpm;
+      const fl=followLeader();
+      if(fl){const n2=beatAfter(fl.s,tb+.3,fl.mult);if(n2!=null&&n2-tb<4)nx=n2;}
+      W.nextBeat=nx;
     }
   }else W.nextBeat=t;
 }
@@ -904,8 +912,8 @@ function detectPitch(buf){
   return 0;
 }
 /* ---- settings every sound carries (saved, and stored in scenes) ---- */
-const SKEYS=['mode','level','when','tune','t0','t1','off','pitch','rev','tone','dist','width','stretch','fpos','fdrift','gsize','gdens','loop','duck','queue'];
-const SMODES=['play','cloud','scatter','bed','swell','pulse','slice','freeze','stretch'];
+const SKEYS=['mode','level','when','tune','t0','t1','off','pitch','rev','tone','dist','width','stretch','fpos','fdrift','gsize','gdens','loop','duck','queue','dissolve','choir','sync','follow','bpmx'];
+const SMODES=['play','cloud','scatter','bed','swell','pulse','slice','freeze','stretch','drone'];
 const fin=(v,d)=>Number.isFinite(+v)&&v!==null&&v!==''?+v:d;
 function cleanSound(q){ // sanitise settings coming from a scene file or the database
   q=q&&typeof q==='object'?q:{};
@@ -926,6 +934,8 @@ function cleanSound(q){ // sanitise settings coming from a scene file or the dat
   o.fpos=clamp(fin(q.fpos,0),0,1);o.fdrift=!!q.fdrift;
   o.gsize=clamp(fin(q.gsize,1),.3,3);o.gdens=clamp(fin(q.gdens,1),.3,3);
   o.loop=!!q.loop;o.duck=clamp(fin(q.duck,.5),0,1);o.queue=q.queue!==false;
+  o.dissolve=clamp(fin(q.dissolve,0),0,1);o.choir=clamp(Math.round(fin(q.choir,4)),2,8);
+  o.sync=!!q.sync;o.follow=!!q.follow;o.bpmx=[.5,1,2].includes(+q.bpmx)?+q.bpmx:1;
   return o;
 }
 const soundSnap=s=>{const o={};SKEYS.forEach(k=>{o[k]=s[k];});return o;};
@@ -973,6 +983,35 @@ function findSlices(env,dur,speechy){ // natural breaks: onsets and the starts o
     if(out.length>=800)break;
   }
   return Float32Array.from(out);
+}
+
+// tempo: autocorrelate the onset curve, prefer a plausible range, then find where the beats fall
+function findBeat(env,dur){
+  const e=env.e,n=e.length;
+  if(dur<4||n<400)return null;
+  const L=new Float32Array(n),o=new Float32Array(n);
+  for(let i=0;i<n;i++)L[i]=Math.log(e[i]+1e-3);
+  let mean=0;
+  for(let i=2;i<n;i++){const d=L[i]-L[i-2];o[i]=d>0?d:0;mean+=o[i];}
+  mean/=n;const str=mean;
+  for(let i=0;i<n;i++)o[i]=Math.max(0,o[i]-mean*.5);
+  const lo=30,hi=100,ac=new Float32Array(hi+3);let e0=0;
+  for(let i=0;i<n;i++)e0+=o[i]*o[i];
+  if(e0<1e-6)return null;
+  for(let lag=lo-2;lag<=hi+1;lag++){let s=0;for(let i=lag;i<n;i++)s+=o[i]*o[i-lag];ac[lag]=s/(n-lag);}
+  let best=0,bl=0;
+  for(let lag=lo;lag<=hi;lag++){
+    const bpm=6000/lag,w=Math.exp(-sq(Math.log2(bpm/115))/(2*sq(.7))),v=ac[lag]*w;
+    if(ac[lag]>=ac[lag-1]&&ac[lag]>=ac[lag+1]&&v>best){best=v;bl=lag;}
+  }
+  if(!bl)return null;
+  const a=ac[bl-1],b=ac[bl],c=ac[bl+1],den=a-2*b+c,off=den?clamp(.5*(a-c)/den,-.5,.5):0,lagf=bl+off;
+  let bp=0,bs=-1;
+  for(let ph=0;ph<Math.round(lagf);ph++){let s=0;for(let k=0;ph+k*lagf<n;k++)s+=o[Math.round(ph+k*lagf)];if(s>bs){bs=s;bp=ph;}}
+  let m=0;for(let lag=lo;lag<=hi;lag++)m+=ac[lag];m/=(hi-lo+1);
+  let so=0;for(let i=0;i<n;i++)so+=o[i];
+  const lift=(bs/Math.max(1,Math.floor(n/lagf)))/(so/n+1e-9);
+  return{lift,bpm:6000/lagf,beat0:Math.max(0,(bp-1)*.01),conf:clamp((ac[bl]/Math.max(m,1e-9)-1)/6,0,1),str};
 }
 
 // Auto-prepare: tidy a fresh sound so it behaves — no clicks, no dead air, sensible loudness, and a guess at what it is
@@ -1026,7 +1065,7 @@ function prepare(buf,tidy){
     info.db=20*Math.log10(norm/old);
   }
   const dur=buf.duration,kind=classify(env,dur);
-  return{buf,info,norm,peaks,hz:detectPitch(buf),kind,slices:findSlices(env,dur,kind==='speech')};
+  return{buf,info,norm,peaks,hz:detectPitch(buf),kind,slices:findSlices(env,dur,kind==='speech'),beat:findBeat(env,dur)};
 }
 
 /* ---- persistence (IndexedDB): audio stored once, settings stored separately ---- */
@@ -1077,9 +1116,10 @@ function addSample(buf,name,ab,o){
     ab:ab&&ab.byteLength<40e6?ab:null,prep:!!o.prep,stored:!!o.restored,at:o.at||0,
     cur:Math.random()*d,acc:0,until:0,nextBed:0,nextP:0,lastB:0,nextFz:0,dead:false,pos:clamp(+o.pos||0,0,d),
     lastT:SMODES.includes(o.lastT)&&o.lastT!=='play'?o.lastT:(c.mode==='play'?'stretch':c.mode),
-    pl:null,playing:false,tv:null,tbuf:null,tkey:'',tbusy:false,tdue:0,rbuf:null,rkey:''
+    pl:null,playing:false,tv:null,tbuf:null,tkey:'',tbusy:false,tdue:0,rbuf:null,rkey:'',dbuf:null,dbusy:false,dz:0,vb:null,vkey:''
   },c);
   SAMP.push(s);renderSample(s);
+  SAMP.forEach(x=>{if(x!==s&&x.refresh)x.refresh();});
   if(!o.restored)persist(s,true);
   return s;
 }
@@ -1104,7 +1144,7 @@ async function ingest(ab,name,o){
   let mode=o.mode,auto=!mode;
   if(auto){
     const talk=P.kind==='speech'||P.kind==='music';
-    mode=talk&&P.buf.duration>=12?'play':P.buf.duration<3?'scatter':P.buf.duration<24?'cloud':'bed';
+    mode=talk&&P.buf.duration>=12&&!o.noplay?'play':P.buf.duration<3?'scatter':P.buf.duration<24?'cloud':'bed';
   }
   const s=addSample(P.buf,name,ab,{P,prep:tidy,set:Object.assign({},o.set||{},{mode})});
   s.note=describePrep(P,tidy);if(s.refresh)s.refresh();
@@ -1147,7 +1187,7 @@ async function setPrep(s,on){ // re-read the original and apply (or undo) the ti
     if(s.pl)killPlay(s,.1);
     fadeVoices(s);
     const P=prepare(buf,on),dN=P.buf.duration;
-    s.buf=P.buf;s.P=P;s.peaks=P.peaks;s.norm=P.norm;s.hz=P.hz;s.rbuf=null;s.tbuf=null;s.tkey='';s.prep=on;
+    s.buf=P.buf;s.P=P;s.peaks=P.peaks;s.norm=P.norm;s.hz=P.hz;s.rbuf=null;s.rbufW=null;s.dbuf=null;s.vb=null;s.vkey='';s.tbuf=null;s.tkey='';s.prep=on;
     s.t0=clamp((aR-P.info.head)/dN,0,.98);s.t1=clamp((zR-P.info.head)/dN,.02,1);
     if(s.t1<=s.t0+.001){s.t0=0;s.t1=1;}
     s.pos=clamp(pR-P.info.head,0,dN);s.note=describePrep(P,on);
@@ -1192,6 +1232,7 @@ function drawWave(c,s){
 function redrawWaves(){SAMP.forEach(s=>{if(s.wf)drawWave(s.wf,s);});}
 
 const MHINT={
+  drone:'Finds the held vowels or notes in the sound and sings them as a choir on the current chord.',
   cloud:'Grinds the sound into a granular texture that swells with the wind.',
   freeze:'Holds one moment as a sustained, shimmering tone. Tap the waveform to choose the moment.',
   stretch:'Melts the sound into a slow wash many times longer than the original. Tap the waveform to choose where.',
@@ -1205,7 +1246,7 @@ const MHINT={
 const SEGS={ // label sets
   off:[['0','On'],['1','Off']],
   kind:[['play','Play'],['t','Transform']],
-  texture:[['cloud','Cloud'],['freeze','Freeze'],['stretch','Stretch'],['bed','Bed']],
+  texture:[['cloud','Cloud'],['freeze','Freeze'],['stretch','Stretch'],['drone','Choir'],['bed','Bed']],
   event:[['scatter','Scatter'],['swell','Swell'],['slice','Slice'],['pulse','Pulse']],
   when:[['any','Any time'],['day','Day'],['night','Night']],
   tune:[['0','As recorded'],['1','In key']],
@@ -1213,7 +1254,10 @@ const SEGS={ // label sets
   fdrift:[['0','Still'],['1','Wandering']],
   loop:[['0','Play once'],['1','Loop']],
   queue:[['1','Then play next'],['0','Stop after']],
-  prep:[['1','Auto-prepare on'],['0','Off']]
+  prep:[['1','Auto-prepare on'],['0','Off']],
+  bpmx:[['0.5','Half time'],['1','Detected tempo'],['2','Double time']],
+  follow:[['0','Heartbeat: its own'],['1','Heartbeat: follows song']],
+  sync:[['0','Free timing'],['1','On the beat']]
 };
 function stretchSpan(s){ // seconds of the original that a stretch covers
   const reg=Math.max(.05,(s.t1-s.t0)*s.buf.duration),out=clamp(reg*s.stretch,10,90);
@@ -1230,8 +1274,8 @@ function renderSample(s){
    +'<div class="seg" data-k="mode">'+SEGS.event.map(a=>'<button data-v="'+a[0]+'">'+a[1]+'</button>').join('')+'</div></div>'
    +'<p class="mhint"></p>'
    +'<div class="tx" data-for="play"><button class="pill sm" data-a="back">⟲ 15</button><button class="pill sm go" data-a="go">▶ Play</button><button class="pill sm" data-a="fwd">15 ⟳</button><span class="tm"></span></div>'
-   +seg('loop',SEGS.loop,'play')+seg('queue',SEGS.queue,'play')
-   +seg('when',SEGS.when,'t')+seg('tune',SEGS.tune,'t')
+   +seg('loop',SEGS.loop,'play')+seg('queue',SEGS.queue,'play')+seg('bpmx',SEGS.bpmx,'play')+seg('follow',SEGS.follow,'play')
+   +seg('when',SEGS.when,'t')+seg('tune',SEGS.tune,'t')+seg('sync',SEGS.sync,'m:pulse m:slice m:scatter')
    +seg('rev',SEGS.rev,'m:cloud m:scatter m:bed m:swell m:slice m:pulse m:stretch')
    +seg('fdrift',SEGS.fdrift,'m:freeze')
    +'<div class="sliders"></div>'
@@ -1256,20 +1300,25 @@ function renderSample(s){
   addSl('level','Level',0,1,.01,pct,.7,TALL);
   addSl('tone','Tone',0,1,.01,v=>v>=.985?'open':Math.round(250*Math.pow(72,v))+' Hz',1,TALL);
   const pitchSl=addSl('pitch','Pitch',-24,24,1,v=>(v>0?'+':v<0?'−':'')+Math.abs(v)+' st',0,TALL);
-  addSl('dist','Distance',0,1,.01,(v)=>v==null?'varies':pct(v),null,'m:cloud m:scatter m:swell m:slice m:pulse m:freeze m:stretch');
+  addSl('dist','Distance',0,1,.01,(v)=>v==null?'varies':pct(v),null,'m:cloud m:scatter m:swell m:slice m:pulse m:freeze m:stretch m:drone');
   addSl('width','Width',0,1,.01,pct,.8,'m:cloud m:scatter m:swell m:slice');
   addSl('stretch','Stretch',2,40,.5,v=>'×'+v,8,'m:stretch',s=>'covers '+stretchSpan(s).toFixed(1)+' s of the sound');
   addSl('fpos','Moment',0,1,.005,pct,0,'m:freeze m:stretch');
   addSl('gsize','Grain size',.3,3,.05,v=>'×'+v.toFixed(2),1,'m:cloud');
   addSl('gdens','Density',.3,3,.05,v=>'×'+v.toFixed(2),1,'m:cloud');
   addSl('duck','Ambience eases by',0,1,.01,v=>v<.01?'off':pct(v),.5,'play');
+  addSl('dissolve','Dissolve',0,1,.01,pct,0,'play m:cloud m:scatter m:bed m:swell m:slice m:pulse',s=>s.dbusy?'building…':(s.dissolve>.005&&!s.dbuf?'building…':'recognisable → wash'));
+  addSl('choir','Voices',2,8,1,v=>String(v),4,'m:drone',s=>s.tbusy?'listening for voices…':(s.vfound!=null?'found '+s.vfound+' held '+(s.vfound===1?'sound':'sounds'):''));
   const info=()=>{
     const dur=s.buf.duration,trimmed=s.t0>.001||s.t1<.999,kindTxt={speech:'speech',music:'music',texture:'steady texture'}[s.P.kind];
-    sm.textContent=fmtT(dur).replace(/^0:/,'0:')+(dur<60?' ('+dur.toFixed(1)+'s)':'')+' · '+(s.hz?noteName(s.hz):'unpitched')+(kindTxt?' · looks like '+kindTxt:'')+(trimmed?' · region '+(s.t0*dur).toFixed(1)+'–'+(s.t1*dur).toFixed(1)+'s':'');
+    sm.textContent=fmtT(dur).replace(/^0:/,'0:')+(dur<60?' ('+dur.toFixed(1)+'s)':'')+' · '+(s.hz?noteName(s.hz):'unpitched')+(kindTxt?' · looks like '+kindTxt:'')+(tempoOf(s)?' · ≈'+Math.round(tempoOf(s).bpm)+' BPM':'')+(trimmed?' · region '+(s.t0*dur).toFixed(1)+'–'+(s.t1*dur).toFixed(1)+'s':'');
   };
   const vis=()=>{
     const key=s.mode==='play'?'play':'t',m='m:'+s.mode;
     d.querySelectorAll('[data-for]').forEach(el=>{const t=el.dataset.for.split(' ');el.classList.toggle('hide',!(t.includes(key)||t.includes(m)));});
+    const T=tempoOf(s),anyT=SAMP.some(x=>x.mode==='play'&&tempoOf(x));
+    d.querySelectorAll('[data-k=bpmx],[data-k=follow]').forEach(el=>{if(!T)el.classList.add('hide');});
+    d.querySelectorAll('[data-k=sync]').forEach(el=>{if(!anyT)el.classList.add('hide');});
     mh.textContent=MHINT[s.mode]||'';
     hint.textContent=s.mode==='play'?'Tap the waveform to jump there. Drag the two handles to set the start and end.':
       s.mode==='freeze'||s.mode==='stretch'?'Tap the waveform to choose the moment. Drag the two handles to limit the region.':
@@ -1280,7 +1329,8 @@ function renderSample(s){
     const k=g.dataset.k;let cur;
     if(k==='mode')cur=s.mode;
     else if(k==='kind')cur=s.mode==='play'?'play':'t';
-    else if(k==='tune'||k==='off'||k==='rev'||k==='fdrift'||k==='loop'||k==='queue'||k==='prep')cur=s[k]?'1':'0';
+    else if(k==='bpmx')cur=String(s.bpmx);
+    else if(k==='tune'||k==='off'||k==='rev'||k==='fdrift'||k==='loop'||k==='queue'||k==='prep'||k==='sync'||k==='follow')cur=s[k]?'1':'0';
     else cur=s[k];
     g.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===cur));
   });
@@ -1299,6 +1349,7 @@ function renderSample(s){
     if(key==='pitch'&&s.mode==='play')return persist(s);
     if(['stretch','fpos','t0','t1','rev','mode'].includes(key)||key==='pitch'&&s.mode!=='play')s.tdue=performance.now()+650;
     if(key==='stretch'||key==='fpos')drawWave(c,s);
+    if(key==='choir')s.vnew=true;
     persist(s);
   };
   const setMode=m=>{
@@ -1316,7 +1367,7 @@ function renderSample(s){
     else if(k==='kind')setMode(v==='play'?'play':(s.lastT&&s.lastT!=='play'?s.lastT:'cloud'));
     else if(k==='prep')setPrep(s,v==='1');
     else{
-      if(k==='tune'||k==='off'||k==='rev'||k==='fdrift'||k==='loop'||k==='queue')s[k]=v==='1';else s[k]=v;
+      if(k==='tune'||k==='off'||k==='rev'||k==='fdrift'||k==='loop'||k==='queue'||k==='sync'||k==='follow')s[k]=v==='1';else if(k==='bpmx')s.bpmx=+v;else s[k]=v;
       if(k==='off'&&s.off)pausePlay(s);
       if(k==='loop'&&s.playing&&s.pl){const p=curPos(s);startPlay(s,p,.08);}
       if(k==='rev'||k==='tune'||k==='fdrift')s.tdue=performance.now()+300;
@@ -1486,6 +1537,175 @@ async function renderFreeze(s){
   }
   return ab;
 }
+// Dissolve: the whole sound rebuilt with random phases in ~0.7 s windows — same timeline, but only the harmony and the shape of the loudness survive
+async function renderDissolve(s){
+  const buf=s.buf,sr=buf.sampleRate,D=sr>=32000?2:1,sr2=sr/D,N=16384,hop=N/2,win=new Float64Array(N);
+  for(let i=0;i<N;i++)win[i]=Math.sin(Math.PI*(i+.5)/N);
+  const x=grabMono(buf,0,buf.duration,D),len=x.length,frames=Math.ceil((len+hop)/hop)+1;
+  const xin=new Float32Array(len+3*N);xin.set(x,hop);
+  const P=fftPlan(N),re=new Float64Array(N),im=new Float64Array(N),mag=new Float64Array(N/2+1),r2=new Float64Array(N),i2=new Float64Array(N);
+  const out=[new Float32Array(len+3*N),new Float32Array(len+3*N)];
+  for(let f=0;f<frames;f++){
+    const b0=f*hop;
+    for(let j=0;j<N;j++){re[j]=xin[b0+j]*win[j];im[j]=0;}
+    fft(re,im,P,false);
+    for(let k=0;k<=N/2;k++)mag[k]=Math.hypot(re[k],im[k]);
+    for(let c=0;c<2;c++){
+      r2[0]=0;i2[0]=0;r2[N/2]=0;i2[N/2]=0;
+      for(let k=1;k<N/2;k++){const ph=Math.random()*TAU,m=mag[k],cr=m*Math.cos(ph),ci=m*Math.sin(ph);r2[k]=cr;i2[k]=ci;r2[N-k]=cr;i2[N-k]=-ci;}
+      fft(r2,i2,P,true);
+      const o=out[c];
+      for(let j=0;j<N;j++)o[b0+j]+=r2[j]/N*win[j];
+    }
+    if(f%6===5)await yieldUI();
+    if(s.dead||s.buf!==buf)return null;
+  }
+  const ab=ctx.createBuffer(2,len,sr2),gIn=rmsOf(x);
+  for(let c=0;c<2;c++){
+    const o=out[c].subarray(hop,hop+len),dst=ab.getChannelData(c),k=clamp(gIn/Math.max(1e-6,rmsOf(o)),.05,20);
+    let pk=0;
+    for(let i=0;i<len;i++){const v=o[i]*k;dst[i]=v;if(Math.abs(v)>pk)pk=Math.abs(v);}
+    if(pk>.95){const q=.95/pk;for(let i=0;i<len;i++)dst[i]*=q;}
+  }
+  return ab;
+}
+async function buildDissolve(s){
+  if(s.dbusy||s.dbuf)return;
+  s.dbusy=true;if(s.refresh)s.refresh();
+  const buf=s.buf;
+  try{const ab=await renderDissolve(s);if(ab&&!s.dead&&s.buf===buf)s.dbuf=ab;}catch(e){}
+  s.dbusy=false;if(s.refresh)s.refresh();
+}
+// Choir: find the held vowels / notes, smear each into a sustained loop, sing them on the current chord
+async function smearLoop(x,sr2,N){ // one periodic cycle with the spectrum of x and random phases
+  const real=Math.min(x.length,N),P=fftPlan(N),re=new Float64Array(N),im=new Float64Array(N);
+  for(let j=0;j<real;j++)re[j]=x[j]*Math.sin(Math.PI*(j+.5)/real);
+  fft(re,im,P,false);
+  const mag=new Float64Array(N/2+1);
+  for(let k=0;k<=N/2;k++)mag[k]=Math.hypot(re[k],im[k]);
+  const ab=ctx.createBuffer(2,N,sr2),gIn=rmsOf(x,real),r2=new Float64Array(N),i2=new Float64Array(N);
+  for(let c=0;c<2;c++){
+    r2[0]=0;i2[0]=0;r2[N/2]=0;i2[N/2]=0;
+    for(let k=1;k<N/2;k++){const ph=Math.random()*TAU,m=mag[k],cr=m*Math.cos(ph),ci=m*Math.sin(ph);r2[k]=cr;i2[k]=ci;r2[N-k]=cr;i2[N-k]=-ci;}
+    fft(r2,i2,P,true);
+    const dst=ab.getChannelData(c);
+    for(let i=0;i<N;i++)dst[i]=r2[i]/N;
+    const g=clamp(gIn/Math.max(1e-6,rmsOf(dst)),.02,30);let pk=0;
+    for(let i=0;i<N;i++){dst[i]*=g;const v=Math.abs(dst[i]);if(v>pk)pk=v;}
+    if(pk>.95){const q=.95/pk;for(let i=0;i<N;i++)dst[i]*=q;}
+    await yieldUI();
+  }
+  return ab;
+}
+async function findVoices(s){ // steady pitched stretches: [startSec, lengthSec, f0, score]
+  const buf=s.buf,sr=buf.sampleRate,D=Math.max(1,Math.round(sr/11025)),sr2=sr/D,dur=buf.duration,A0=s.t0*dur,len=Math.min((s.t1-s.t0)*dur,150);
+  const x=grabMono(buf,A0,len,D),W2=512,H=330,minL=Math.floor(sr2/450),maxL=Math.floor(sr2/70),nf=Math.max(0,Math.floor((x.length-W2-maxL)/H));
+  const f0=new Float32Array(nf),cl=new Float32Array(nf),en=new Float32Array(nf),c=new Float32Array(maxL+2);
+  let pk=0;
+  for(let i=0;i<nf;i++){const b=i*H;let e=0;for(let j=0;j<W2;j++)e+=x[b+j]*x[b+j];en[i]=Math.sqrt(e/W2);if(en[i]>pk)pk=en[i];}
+  const gate=Math.max(.004,pk*.12);
+  for(let i=0;i<nf;i++){
+    if(en[i]>=gate){
+      const b=i*H;let e0=0,m=0;
+      for(let j=0;j<W2;j+=2)e0+=x[b+j]*x[b+j];
+      for(let L=minL;L<=maxL;L++){
+        let sx=0,e1=0;
+        for(let j=0;j<W2;j+=2){const y=x[b+j+L];sx+=x[b+j]*y;e1+=y*y;}
+        c[L]=sx/Math.sqrt(e0*e1+1e-9);if(c[L]>m)m=c[L];
+      }
+      if(m>=.82){
+        for(let L=minL+1;L<maxL;L++){
+          if(c[L]>c[L-1]&&c[L]>=c[L+1]&&c[L]>=.93*m){
+            const a=c[L-1],bb=c[L],g=c[L+1],den=a-2*bb+g,off=den?.5*(a-g)/den:0;
+            f0[i]=sr2/(L+off);cl[i]=m;break;
+          }
+        }
+      }
+    }
+    if(i%120===119){await yieldUI();if(s.dead)return[];}
+  }
+  const runs=[];let st=-1;
+  const close=i=>{
+    if(st>=0&&i-st>=6){
+      const seg=Array.from(f0.subarray(st,i)).sort((p,q)=>p-q),n=i-st;let mc=0,me=0;
+      for(let k=st;k<i;k++){mc+=cl[k];me+=en[k];}
+      runs.push([A0+st*H/sr2,(n*H+W2)/sr2,seg[n>>1],n*(mc/n)*(me/n)]);
+    }
+  };
+  for(let i=0;i<nf;i++){
+    const v=f0[i]>0;
+    if(v&&st>=0&&Math.abs(Math.log2(f0[i]/f0[i-1]))>=.06){close(i);st=i;}
+    else if(v&&st<0)st=i;
+    else if(!v&&st>=0){close(i);st=-1;}
+  }
+  close(nf);
+  runs.sort((p,q)=>q[3]-p[3]);
+  const out=[];
+  for(const r of runs){if(out.every(o=>r[0]>o[0]+o[1]||r[0]+r[1]<o[0]))out.push(r);if(out.length>=6)break;}
+  return out;
+}
+async function buildChoir(s,key){
+  s.tbusy=true;if(s.refresh)s.refresh();
+  const buf=s.buf,D=buf.sampleRate>=32000?2:1,sr2=buf.sampleRate/D;
+  try{
+    const runs=await findVoices(s),vb=[];
+    for(const r of runs){
+      const take=Math.min(r[1],.5),from=r[0]+(r[1]-take)/2,x=grabMono(buf,from,take,D);
+      vb.push({buf:await smearLoop(x,sr2,65536),f0:r[2]});
+      if(s.dead)return;
+    }
+    s.vfound=vb.length;
+    if(!vb.length){ // nothing steady: hold the loudest moment instead
+      const dur=buf.duration,A0=s.t0*dur,len=Math.max(.05,(s.t1-s.t0)*dur),x=grabMono(buf,A0,len,D),w=Math.min(x.length,Math.floor(sr2*.6));
+      let bi=0,be=0;for(let i=0;i+w<=x.length;i+=Math.max(1,w>>2)){let e=0;for(let j=0;j<w;j+=3)e+=x[i+j]*x[i+j];if(e>be){be=e;bi=i;}}
+      vb.push({buf:await smearLoop(x.subarray(bi,bi+w),sr2,65536),f0:s.hz||0});
+    }
+    if(s.mode==='drone'&&!s.dead){s.vb=vb;s.vkey=key;s.vnew=true;}
+  }catch(e){s.vkey=key;}
+  s.tbusy=false;if(s.refresh)s.refresh();
+}
+const CHOIR_OFF=[0,2,4,0,7,2,4,0],CHOIR_OCT=[0,0,0,1,0,1,-1,-1];
+function choirRate(s,v){
+  const pmv=pm(s);
+  if(!v.vb.f0)return pmv;
+  let r=noteHz(W.d+v.off)*Math.pow(2,v.oct)/v.vb.f0;
+  while(r>1.5)r/=2;
+  while(r<.67)r*=2;
+  return r*pmv;
+}
+function startChoir(s){
+  const n=s.choir,m=s.vb.length,vs=[];
+  for(let i=0;i<n;i++){
+    const vb=s.vb[i%m],src=ctx.createBufferSource();
+    src.buffer=vb.buf;src.loop=true;
+    const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=2200;f.Q.value=.3;
+    const g=ctx.createGain();g.gain.value=0;
+    const p=mkPan(rand(-.7,.7));
+    src.connect(f);f.connect(g);g.connect(p);p.connect(A.bus.user.in);
+    let sd=null;
+    if(s.dist!=null){sd=ctx.createGain();sd.gain.value=s.dist*.7;g.connect(sd);sd.connect(A.bus.user.wet);}
+    const v={src,f,g,p,sd,vb,off:CHOIR_OFF[i%8],oct:CHOIR_OCT[i%8],ph:Math.random()*TAU,per:rand(9,20),k:1/Math.sqrt(n)};
+    src.playbackRate.value=choirRate(s,v);
+    src.start(0,Math.random()*vb.buf.duration);
+    vs.push(v);
+  }
+  s.tv=vs;s.lastD=W.d;s.lastP=s.pitch;
+}
+function choirTick(s,t,dt,g){
+  const key=['drone',s.t0.toFixed(4),s.t1.toFixed(4),s.buf.length].join('|');
+  if(s.vkey!==key&&!s.tbusy&&performance.now()>=(s.tdue||0))buildChoir(s,key);
+  if(s.vnew){s.vnew=false;fadeVoices(s);}
+  if(s.vb&&!s.tv&&!s.tbusy)startChoir(s);
+  if(!s.tv)return;
+  const th=toneHz(s),retune=s.lastD!==W.d||s.lastP!==s.pitch;
+  for(const v of s.tv){
+    const sw=.55+.45*Math.sin(TAU*t/v.per+v.ph);
+    v.g.gain.setTargetAtTime(s.level*s.norm*1.1*v.k*sw*(.4+.6*W.breath)*g*(1-.5*W.hush),t,.6);
+    v.f.frequency.setTargetAtTime(Math.min(1200+5000*(.2+.8*W.breath)*(.5+.5*W.energy),th||99999),t,.4);
+    if(retune)v.src.playbackRate.setTargetAtTime(choirRate(s,v),t,1.6);
+  }
+  s.lastD=W.d;s.lastP=s.pitch;
+}
 const texKey=s=>[s.mode,s.t0.toFixed(4),s.t1.toFixed(4),s.rev?1:0,s.mode==='stretch'?s.stretch.toFixed(1):'',s.fpos.toFixed(3),s.buf.length].join('|');
 async function buildTexture(s){
   const key=texKey(s);
@@ -1502,7 +1722,7 @@ function fadeVoices(s){
   const t=ctx.currentTime;
   for(const v of s.tv){
     try{v.g.gain.cancelScheduledValues(t);v.g.gain.setTargetAtTime(0,t,.9);v.src.stop(t+4.5);}catch(e){}
-    v.src.onended=()=>{try{v.src.disconnect();v.f.disconnect();v.g.disconnect();if(v.sd)v.sd.disconnect();}catch(e){}};
+    v.src.onended=()=>{try{v.src.disconnect();v.f.disconnect();v.g.disconnect();if(v.sd)v.sd.disconnect();if(v.p)v.p.disconnect();}catch(e){}};
   }
   s.tv=null;
 }
@@ -1552,21 +1772,23 @@ function tunedRate(s){
   return p*Math.pow(2,(W.scale[(Math.random()*L)|0]-(Math.random()<.5?12:0))/12);
 }
 const rateFor=s=>s.tune?tunedRate(s):pm(s);
-// the region being played, forwards or (copied once) backwards. A/Z are always forward-time bounds
-function reg(s){
-  const d=s.buf.duration,a=s.t0*d,z=s.t1*d;
-  if(!s.rev)return{b:s.buf,a,z,A:a,Z:z,rev:false};
-  const key=s.t0+'|'+s.t1+'|'+s.buf.length;
-  if(!s.rbuf||s.rkey!==key){
-    const sr=s.buf.sampleRate,lo=Math.max(a,z-90),i0=Math.floor(lo*sr),i1=Math.min(s.buf.length,Math.floor(z*sr)),n=Math.max(1,i1-i0),o=ctx.createBuffer(s.buf.numberOfChannels,n,sr);
-    for(let c=0;c<o.numberOfChannels;c++){const src=s.buf.getChannelData(c),dst=o.getChannelData(c);for(let i=0;i<n;i++)dst[i]=src[i1-1-i];}
-    s.rbuf=o;s.rkey=key;s.rA=i0/sr;s.rZ=i1/sr;
+// the region being played, forwards or (copied once) backwards. A/Z are always forward-time bounds.
+// wet=true reads the dissolved copy instead of the original (same timeline)
+function reg(s,wet){
+  const w=!!(wet&&s.dbuf),sb=w?s.dbuf:s.buf,d=s.buf.duration,a=s.t0*d,z=s.t1*d;
+  if(!s.rev)return{b:sb,a,z,A:a,Z:z,rev:false};
+  const key=s.t0+'|'+s.t1+'|'+sb.length,bk=w?'rbufW':'rbuf',kk=w?'rkeyW':'rkey';
+  if(!s[bk]||s[kk]!==key){
+    const sr=sb.sampleRate,lo=Math.max(a,z-90),i0=Math.floor(lo*sr),i1=Math.min(sb.length,Math.floor(z*sr)),n=Math.max(1,i1-i0),o=ctx.createBuffer(sb.numberOfChannels,n,sr);
+    for(let c=0;c<o.numberOfChannels;c++){const src=sb.getChannelData(c),dst=o.getChannelData(c);for(let i=0;i<n;i++)dst[i]=src[i1-1-i];}
+    s[bk]=o;s[kk]=key;s[bk+'A']=i0/sr;s[bk+'Z']=i1/sr;
   }
-  return{b:s.rbuf,a:0,z:s.rbuf.duration,A:s.rA,Z:s.rZ,rev:true};
+  return{b:s[bk],a:0,z:s[bk].duration,A:s[bk+'A'],Z:s[bk+'Z'],rev:true};
 }
+const wetPick=s=>s.dissolve>0&&!!s.dbuf&&Math.random()<s.dissolve;
 function playSample(s,t,o){
   o=o||{};
-  const R=reg(s);
+  const R=reg(s,o.wet!=null?o.wet:wetPick(s));
   let a=R.a,z=R.z;
   if(o.a!=null){a=o.a;z=o.z;if(R.rev){const y0=R.Z-z,y1=R.Z-a;a=Math.max(0,y0);z=Math.min(R.b.duration,y1);}}
   if(z-a<.02)return 0;
@@ -1602,6 +1824,12 @@ function userCall(s,t){
 }
 function scatterTick(s,t,dt,g){
   if(t<s.until)return;
+  const L=s.sync?leader():null;
+  if(L){ // on the song's beat
+    const nb=beatAfter(L,Math.max(t,(s.lastB||0)+.05),1);
+    if(nb!=null&&nb<t+.18&&nb>(s.lastB||0)+.02){s.lastB=nb;if(Math.random()<(.06+.22*W.energy)*g*(1-.85*W.tension))userCall(s,nb);}
+    return;
+  }
   const calm=t>W.busyUntil?1:.25;
   const p=(.03+.14*W.energy)*g*(1-.85*W.tension)*(1-.6*W.storm)*calm;
   if(Math.random()<p*dt)userCall(s,t+.1);
@@ -1625,6 +1853,18 @@ function pickSlice(s,R){
 }
 function sliceTick(s,t,dt,g){ // fragments cut at the sound's own breaks
   if(t<s.until)return;
+  const L=s.sync?leader():null;
+  if(L){ // one fragment per beat, now and then
+    const nb=beatAfter(L,Math.max(t,(s.lastB||0)+.05),1),tp=tempoOf(L);
+    if(nb!=null&&nb<t+.18&&nb>(s.lastB||0)+.02){
+      s.lastB=nb;
+      if(Math.random()<(.4+.5*W.energy)*g){
+        const R=reg(s),sl=pickSlice(s,R),w=s.width==null?.8:s.width,per=tp.per/L.pl.rate,rate=rateFor(s);
+        playSample(s,nb,{a:sl[0],z:Math.min(sl[1],sl[0]+per*1.6*rate),rate,max:per*1.8,dist:s.dist==null?rand(.05,.45):s.dist,pan:rand(-w,w),vel:rand(.6,1),fi:.005,fo:Math.min(.2,per*.4)});
+      }
+    }
+    return;
+  }
   const p=(.2+.8*W.energy)*g*(1-.8*W.tension)*(1-.5*W.storm)*(t>W.busyUntil?1:.4);
   if(Math.random()>=p*dt)return;
   const R=reg(s),sl=pickSlice(s,R),w=s.width==null?.8:s.width;
@@ -1632,19 +1872,22 @@ function sliceTick(s,t,dt,g){ // fragments cut at the sound's own breaks
   const dur=playSample(s,t+.05,{a:sl[0],z:sl[1],rate,max:4,dist:s.dist==null?rand(.05,.5):s.dist,pan:rand(-w,w),vel:rand(.6,1)});
   s.until=t+Math.min(dur,1.4)*rand(.5,1.1);
 }
-function pulseTick(s,t,dt,g){ // a small piece of the sound on each heartbeat
-  const real=natOn()&&S.pulse>.01;
-  let bt=0;
-  if(real){if(W.lastBeat>s.lastB+.01)bt=W.lastBeat;}
+function pulseTick(s,t,dt,g){ // a small piece of the sound on each beat (the heartbeat, or a song's beat)
+  const L=s.sync?leader():null,real=natOn()&&S.pulse>.01;
+  let bt=0,dubAt=.23;
+  if(L){
+    const nb=beatAfter(L,Math.max(t,s.lastB+.05),1);
+    if(nb!=null&&nb<t+.18&&nb>s.lastB+.02){bt=nb;dubAt=.5*tempoOf(L).per/L.pl.rate;}
+  }else if(real){if(W.lastBeat>s.lastB+.01)bt=W.lastBeat;}
   else if(t+.15>=s.nextP){bt=Math.max(s.nextP,t+.03);s.nextP=bt+60/((34+36*W.energy)*(1+.08*(W.breath-.5)));}
   if(!bt||g<.05)return;
   s.lastB=bt;
   const R=reg(s),sl=pickSlice(s,R),z=Math.min(sl[1],sl[0]+.5),rate=rateFor(s),w=s.width==null?.8:s.width,pan=rand(-w,w)*.5,dist=s.dist==null?rand(.1,.4):s.dist;
   if(Math.random()<.9*Math.min(1,g+.2))playSample(s,bt,{a:sl[0],z,rate,max:.6,dist,pan,vel:.75*g,fi:.01,fo:.14});
-  if(Math.random()<.55)playSample(s,bt+.23,{a:sl[0],z,rate:rate*.94,max:.6,dist,pan,vel:.45*g,fi:.01,fo:.14});
+  if(Math.random()<(L?.3:.55))playSample(s,bt+dubAt,{a:sl[0],z,rate:rate*.94,max:.6,dist,pan,vel:.45*g,fi:.01,fo:.14});
 }
 function grain(s,t){
-  const R=reg(s),a=R.a,b=R.z,len=Math.max(.05,b-a),rate=s.tune?tunedRate(s):pm(s)*Math.pow(2,gauss()*.025);
+  const R=reg(s,wetPick(s)),a=R.a,b=R.z,len=Math.max(.05,b-a),rate=s.tune?tunedRate(s):pm(s)*Math.pow(2,gauss()*.025);
   let gl=clamp(rand(.08,.3)*(1.4-.5*W.energy)*(s.gsize||1),.03,1.2);
   gl=Math.min(gl,len/rate*.98);
   const span=gl*rate;
@@ -1669,7 +1912,7 @@ function cloudTick(s,t,dt,g){
   if(s.acc>3)s.acc=0;
 }
 function bedTick(s,t,dt,g){
-  const R=reg(s);
+  const R=reg(s,wetPick(s));
   if(!s.bedG){
     s.bedF=ctx.createBiquadFilter();s.bedF.type='lowpass';s.bedF.frequency.value=3000;
     s.bedG=ctx.createGain();s.bedG.gain.value=0;s.bedP=mkPan(rand(-.3,.3));
@@ -1691,12 +1934,39 @@ function bedTick(s,t,dt,g){
 }
 
 /* ---- Play: the sound as it is, with a transport, a playlist and a world that makes room ---- */
-function curPos(s){
-  const pl=s.pl;
-  if(!pl||!ctx)return s.pos||0;
-  let p=pl.p0+(ctx.currentTime-pl.t0)*pl.rate;
+function posAt(pl,T){
+  let p=pl.p0+(T-pl.t0)*pl.rate;
   if(pl.loop&&pl.z>pl.a){const L=pl.z-pl.a;p=pl.a+(((p-pl.a)%L)+L)%L;}
   return Math.min(p,pl.z);
+}
+function curPos(s){const pl=s.pl;if(!pl||!ctx)return s.pos||0;return posAt(pl,ctx.currentTime);}
+// the song's beat grid (only when the tempo is clear enough to trust)
+function tempoOf(s){
+  const B=s.P&&s.P.beat;
+  if(!B||B.conf<.25||s.P.kind==='texture'||s.P.kind==='speech')return null;
+  const bpm=B.bpm*(s.bpmx||1);
+  return{bpm,b0:B.beat0,per:60/bpm};
+}
+function leader(){ // the playing sound whose beat everything else can follow
+  const a=A.lastPlay;
+  if(a&&a.pl&&!a.dead&&a.mode==='play'&&tempoOf(a))return a;
+  return SAMP.find(x=>x.pl&&!x.dead&&x.mode==='play'&&tempoOf(x))||null;
+}
+// audio-clock time of the next beat after T (mult 2 = every other beat); null when the song has no more before its end
+function beatAfter(L,T,mult){
+  const pl=L.pl,tp=tempoOf(L);
+  if(!pl||!tp)return null;
+  const per=tp.per*(mult||1),p=posAt(pl,T),k=Math.ceil((p-tp.b0)/per-1e-6),xb=tp.b0+k*per;
+  if(xb>=pl.z-.05)return null;
+  return pl.t0+(xb-pl.p0)/pl.rate;
+}
+function followLeader(){ // when the song leads the heartbeat: fold its tempo into a resting-pulse range
+  const L=leader();
+  if(!L||!L.follow)return null;
+  let bpm=tempoOf(L).bpm*L.pl.rate,mult=1;
+  while(bpm/mult>72)mult*=2;
+  while(bpm/mult<34&&mult>.25)mult/=2;
+  return{s:L,mult};
 }
 function setMeta(s){
   try{if('mediaSession' in navigator&&window.MediaMetadata)navigator.mediaSession.metadata=new MediaMetadata({title:s?s.name:'Biome',artist:s?'Biome · your sound':'A living soundscape'});}catch(e){}
@@ -1713,21 +1983,31 @@ function startPlay(s,from,fade){
   const gf=ctx.createGain(),g=ctx.createGain();
   g.gain.value=s.level*s.norm*.55;
   gf.gain.setValueAtTime(0,t);gf.gain.linearRampToValueAtTime(1,t+(fade||.2));
-  src.connect(f);f.connect(gf);gf.connect(g);g.connect(A.bus.play.in);
+  const dg=ctx.createGain(),wg=ctx.createGain();wg.gain.value=0;
+  src.connect(dg);dg.connect(f);wg.connect(f);f.connect(gf);gf.connect(g);g.connect(A.bus.play.in);
   if(s.loop){src.loop=true;src.loopStart=a;src.loopEnd=z;}
   src.start(t,p);
-  const pl={src,f,gf,g,t0:t,p0:p,rate,a,z,loop:s.loop,killed:false,ending:false,nexted:false};
-  src.onended=()=>{try{src.disconnect();f.disconnect();gf.disconnect();g.disconnect();}catch(e){}if(s.pl===pl&&!pl.killed)playEnded(s);};
+  const pl={src,f,gf,g,dg,wg,wsrc:null,t0:t,p0:p,rate,a,z,loop:s.loop,killed:false,ending:false,nexted:false};
+  src.onended=()=>{try{src.disconnect();dg.disconnect();wg.disconnect();f.disconnect();gf.disconnect();g.disconnect();}catch(e){}if(s.pl===pl&&!pl.killed)playEnded(s);};
   s.pl=pl;s.playing=true;s.pos=p;A.lastPlay=s;
+  if(s.dissolve>.005&&s.dbuf)attachWet(s);
   setMeta(s);
   try{if('mediaSession' in navigator)navigator.mediaSession.playbackState='playing';}catch(e){}
   if(s.refresh)s.refresh();
+}
+function attachWet(s){ // start the dissolved copy in step with the original
+  const pl=s.pl;
+  if(!pl||pl.wsrc||!s.dbuf||!ctx)return;
+  const t=ctx.currentTime+.05,w=ctx.createBufferSource();
+  w.buffer=s.dbuf;w.playbackRate.value=pl.rate;
+  if(pl.loop){w.loop=true;w.loopStart=pl.a;w.loopEnd=pl.z;}
+  w.connect(pl.wg);w.start(t,posAt(pl,t));pl.wsrc=w;
 }
 function killPlay(s,fo){
   const pl=s.pl;if(!pl)return;
   pl.killed=true;s.pl=null;
   const t=ctx.currentTime;
-  try{pl.gf.gain.cancelScheduledValues(t);pl.gf.gain.setTargetAtTime(0,t,Math.max(.01,fo/3));pl.src.stop(t+fo+.15);}catch(e){}
+  try{pl.gf.gain.cancelScheduledValues(t);pl.gf.gain.setTargetAtTime(0,t,Math.max(.01,fo/3));pl.src.stop(t+fo+.15);if(pl.wsrc)pl.wsrc.stop(t+fo+.15);}catch(e){}
 }
 function pausePlay(s){
   if(!s.pl&&!s.playing)return;
@@ -1762,9 +2042,14 @@ function playTick(s,t){
   if(!pl)return;
   pl.g.gain.setTargetAtTime(s.level*s.norm*.55,t,.08);
   pl.f.frequency.setTargetAtTime(toneHz(s)||20000,t,.1);
+  if(s.dissolve>.005&&s.dbuf&&!pl.wsrc)attachWet(s);
+  const dd=s.dissolve;
+  pl.dg.gain.setTargetAtTime(pl.wsrc?Math.cos(dd*Math.PI/2):1,t,.08);
+  pl.wg.gain.setTargetAtTime(pl.wsrc?Math.sin(dd*Math.PI/2):0,t,.08);
   const r=pm(s);
   if(Math.abs(r-pl.rate)>1e-4){ // tape speed changed: re-anchor the position
     const p=curPos(s);pl.p0=p;pl.t0=t;pl.rate=r;pl.src.playbackRate.setValueAtTime(r,t);
+    if(pl.wsrc)pl.wsrc.playbackRate.setValueAtTime(r,t);
   }
   if(pl.loop)return;
   const p=curPos(s),rem=(pl.z-p)/pl.rate;
@@ -1774,7 +2059,7 @@ function playTick(s,t){
   }
   if(!pl.ending&&rem<.09&&!pl.nexted){pl.ending=true;pl.endT=t+rem;pl.gf.gain.cancelScheduledValues(t);pl.gf.gain.setValueAtTime(1,t);pl.gf.gain.linearRampToValueAtTime(0,t+Math.max(.02,rem));}
   if((pl.ending&&t>=pl.endT+.02)||(pl.nexted&&rem<=.02)){
-    const nx=pl.nexted;pl.killed=true;try{pl.src.stop();}catch(e){}
+    const nx=pl.nexted;pl.killed=true;try{pl.src.stop();if(pl.wsrc)pl.wsrc.stop();}catch(e){}
     s.pl=null;s.playing=false;s.pos=s.t0*s.buf.duration;
     if(!nx&&s.queue){const n=nextTrack(s);if(n&&running)startPlay(n,n.t0*n.buf.duration,.4);}
     if(!SAMP.some(x=>x.playing))setMeta(null);
@@ -1803,9 +2088,13 @@ function userTick(t,dt){
   for(const s of SAMP){
     if(s.dead)continue;
     if((s.mode!=='bed'||s.off)&&s.bedG)s.bedG.gain.setTargetAtTime(0,t,.3);
-    const tex=s.mode==='freeze'||s.mode==='stretch';
+    const tex=s.mode==='freeze'||s.mode==='stretch'||s.mode==='drone';
     if((!tex||s.off)&&s.tv)fadeVoices(s);
-    if(!tex&&s.tbuf){s.tbuf=null;s.tkey='';s.tnew=false;}
+    if(s.mode!=='freeze'&&s.mode!=='stretch'&&s.tbuf){s.tbuf=null;s.tkey='';s.tnew=false;}
+    if(s.mode!=='drone'&&s.vb){s.vb=null;s.vkey='';}
+    const wantD=!s.off&&!tex&&s.dissolve>.005; // the dissolved copy: built when wanted, dropped after a while unused
+    if(wantD){s.dz=0;if(!s.dbuf&&!s.dbusy)buildDissolve(s);}
+    else if(s.dbuf){if(!s.dz)s.dz=t;else if(t-s.dz>90){s.dbuf=null;s.rbufW=null;s.dz=0;}}
     if(s.mode!=='play'&&s.pl)pausePlay(s);
     if(s.off){if(s.pl)pausePlay(s);continue;}
     if(s.mode==='play'){playTick(s,t);continue;}
@@ -1818,6 +2107,7 @@ function userTick(t,dt){
       case'slice':sliceTick(s,t,dt,g);break;
       case'pulse':pulseTick(s,t,dt,g);break;
       case'freeze':case'stretch':textureTick(s,t,dt,g);break;
+      case'drone':choirTick(s,t,dt,g);break;
       default:bedTick(s,t,dt,g);
     }
   }
@@ -2000,6 +2290,41 @@ async function toggleMic(){
   };
   mr.start();b.textContent='■ Stop (30 s max)';b.classList.add('rec-on');
   tm=setTimeout(()=>{if(mic===mr&&mr.state!=='inactive')mr.stop();},30000);
+}
+
+/* ---- resample: record what the world is playing, then play it back as a sound ---- */
+let rs=null,rsSrc='all';
+async function toggleResample(){
+  const b=$('#btnResample');
+  if(rs){if(rs.mr.state!=='inactive')rs.mr.stop();return;}
+  if(!ctx||!A.master||!running){toast('Wake the world first');return;}
+  const mime=pickMime();
+  if(mime===null){toast('Recording isn’t supported in this browser');return;}
+  let dest;
+  const mine=rsSrc==='mine';
+  if(mine){
+    if(!A.destU){A.destU=ctx.createMediaStreamDestination();A.userTap=ctx.createGain();A.bus.user.in.connect(A.userTap);A.bus.play.in.connect(A.userTap);A.userTap.connect(A.destU);}
+    dest=A.destU;
+  }else{
+    if(!A.dest){A.dest=ctx.createMediaStreamDestination();A.master.connect(A.dest);}
+    dest=A.dest;
+  }
+  const chunks=[];let mr,tm,iv;
+  try{mr=mime?new MediaRecorder(dest.stream,{mimeType:mime}):new MediaRecorder(dest.stream);}catch(e){toast('Couldn’t start resampling');return;}
+  const t0=Date.now();
+  mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+  mr.onstop=async()=>{
+    clearTimeout(tm);clearInterval(iv);rs=null;b.textContent='● Resample the world';b.classList.remove('rec-on');
+    if(!chunks.length){toast('Nothing was captured');return;}
+    try{
+      const ab=await readBuf(new Blob(chunks,{type:mr.mimeType||mime||'audio/mp4'}));
+      const s=await ingest(ab,(mine?'Your mix ':'Resample ')+stamp().slice(-4),{noplay:true,set:{off:true}});
+      if(s){s.announced=true;toast('Resample added, switched Off. Trim it, then turn it On.',5200);}
+    }catch(e){toast('Couldn’t use that capture');}
+  };
+  mr.start(500);rs={mr};b.classList.add('rec-on');
+  const showT=()=>{b.textContent='■ Stop ('+fmtT((Date.now()-t0)/1000)+')';};showT();iv=setInterval(showT,1000);
+  tm=setTimeout(()=>{if(rs&&rs.mr.state!=='inactive')rs.mr.stop();},180000);
 }
 
 /* ---- sleep, keep-awake, moods ---- */
@@ -2849,6 +3174,8 @@ chip($('#times'),'Real time',()=>{const d=new Date();W.glide=(d.getHours()+d.get
 sleepBtns[0][1].classList.add('on');
 $('#btnRec').addEventListener('click',toggleRec);
 $('#btnMic').addEventListener('click',toggleMic);
+$('#btnResample').addEventListener('click',toggleResample);
+document.querySelectorAll('#rsSrc button').forEach(b=>b.addEventListener('click',()=>{rsSrc=b.dataset.v;document.querySelectorAll('#rsSrc button').forEach(x=>x.classList.toggle('on',x===b));}));
 $('#btnWL').addEventListener('click',()=>setWL(!wantWL));
 const fileIn=$('#file');
 fileIn.addEventListener('change',async()=>{const l=Array.from(fileIn.files||[]);fileIn.value='';await handleFiles(l);});
