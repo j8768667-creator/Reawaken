@@ -134,6 +134,19 @@ input[type=text]:focus{outline:none;border-color:rgba(143,227,200,.7)}
 .scn input[type=text]{flex:1;min-height:40px}
 .namerow{display:flex;gap:10px;align-items:center;margin:8px 0}
 
+#duet{position:fixed;left:50%;top:calc(var(--st) + 66px);width:min(430px,calc(100% - 20px));z-index:8;padding:12px 14px 12px;border-radius:20px;
+  background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  transform:translate(-50%,-140%);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+#duet.open{transform:translate(-50%,0)}
+#duet .dtop{display:flex;align-items:center;gap:10px}
+#duet .dtop b{font-size:15px}
+#duet .dtop span{flex:1;color:var(--dim);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#duet .dread{display:flex;align-items:baseline;gap:12px;margin:8px 0 4px}
+#duet .dnote{font-size:30px;font-weight:600;min-width:92px;font-variant-numeric:tabular-nums}
+#duet .dmeter{flex:1;height:8px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden}
+#duet .dmeter i{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
+#duet .legend{margin:6px 0 0;font-size:12px}
+#duet label.fader{margin-top:4px}
 #kbd{position:fixed;left:calc(var(--sl) + 10px);right:calc(var(--sr) + 10px);bottom:calc(var(--sb) + 10px);z-index:7;
   padding:10px;border-radius:22px;background:var(--panel);border:1px solid var(--line);
   backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);touch-action:none;
@@ -154,7 +167,7 @@ input[type=text]:focus{outline:none;border-color:rgba(143,227,200,.7)}
 
 <div id="hud">
   <div><div id="world">&nbsp;</div><div id="mood">&nbsp;</div></div>
-  <div id="hudR"><button class="pill on" id="btnAmb">Ambience on</button><button class="pill" id="btnKeys">Keys</button><button class="pill" id="btnMix">Controls</button><button class="pill" id="btnRest">Rest</button></div>
+  <div id="hudR"><button class="pill on" id="btnAmb">Ambience on</button><button class="pill" id="btnKeys">Keys</button><button class="pill" id="btnDuet">Duet</button><button class="pill" id="btnMix">Controls</button><button class="pill" id="btnRest">Rest</button></div>
 </div>
 
 <div id="hint">Tap to touch the water · hold to plant a bloom · drag to stir the wind</div>
@@ -240,6 +253,13 @@ input[type=text]:focus{outline:none;border-color:rgba(143,227,200,.7)}
   </div>
 </section>
 <div id="toast"></div>
+<div id="duet" aria-label="Duet">
+  <div class="dtop"><b>Duet</b><span id="duStat">off</span><button class="pill sm" id="duClose">Close</button></div>
+  <div class="dread"><div class="dnote" id="duNote">—</div><div class="dmeter"><i id="duBar"></i></div></div>
+  <div class="chips" id="duOpts"></div>
+  <label class="fader"><span class="lab"><b>Listening sensitivity</b><small></small><i id="duSensV"></i></span><input type="range" id="duSens" min="0" max="1" step="0.01"></label>
+  <p class="legend">Your voice is analysed on this iPad and never recorded or sent anywhere; only the last few seconds are held in memory. Headphones work best. Without them it listens to the room first.</p>
+</div>
 <div id="kbd" aria-label="Keyboard">
   <div id="kbTop">
     <div class="seg" id="kbVoice"><button data-v="pluck" class="on">Pluck</button><button data-v="pad">Pad</button><button data-v="sound">Your sound</button></div>
@@ -298,7 +318,7 @@ document.addEventListener('contextmenu',ev=>ev.preventDefault());
 /* ============================================================
    Settings
    ============================================================ */
-const S={drone:.7,air:.6,water:.6,insects:.65,voices:.65,pulse:.4,blooms:.65,user:.75,space:.55,vitality:.55,volume:.8,dayMin:12,hold:false,ambient:true,keyRoot:-1,keyMode:'',keyLock:false,drift:0,keys:.75,flow:.6,grain:.55,shard:.5,glow:.5,layers:true,nature:true};
+const S={drone:.7,air:.6,water:.6,insects:.65,voices:.65,pulse:.4,blooms:.65,user:.75,space:.55,vitality:.55,volume:.8,dayMin:12,hold:false,ambient:true,keyRoot:-1,keyMode:'',keyLock:false,drift:0,keys:.75,duet:.75,flow:.6,grain:.55,shard:.5,glow:.5,layers:true,nature:true};
 try{const o=JSON.parse(localStorage.getItem('biome.v1')||'{}');for(const k in S)if(k in o&&typeof o[k]===typeof S[k])S[k]=o[k];}catch(e){}
 const save=()=>{try{localStorage.setItem('biome.v1',JSON.stringify(S));}catch(e){}};
 
@@ -440,7 +460,7 @@ function build(){
   A.reverbIn.connect(conv);conv.connect(rhp);rhp.connect(A.reverbOut);A.reverbOut.connect(A.masterIn);
 
   A.duckDry=ctx.createGain();A.duckDry.connect(A.masterIn);A.duckWet=ctx.createGain();A.duckWet.connect(A.reverbIn);A.duckEnv=0;
-  A.bus={drone:bus(.35),wind:bus(.25),water:bus(.3),insects:bus(.3),voices:bus(.3),pulse:bus(.05),bloom:bus(.45),user:bus(.4),keys:bus(.5),flow:bus(.55),grain:bus(.65),shard:bus(.5),glow:bus(.45),play:bus(.1,true)};
+  A.bus={drone:bus(.35),wind:bus(.25),water:bus(.3),insects:bus(.3),voices:bus(.3),pulse:bus(.05),bloom:bus(.45),user:bus(.4),keys:bus(.5),flow:bus(.55),grain:bus(.65),shard:bus(.5),glow:bus(.45),play:bus(.1,true),duet:bus(.5)};
   A.plAn=ctx.createAnalyser();A.plAn.fftSize=1024;A.plAn.smoothingTimeConstant=0;A.bus.play.in.connect(A.plAn);A.plBuf=new Float32Array(1024);
   A.insDuck=ctx.createGain();A.insDuck.connect(A.bus.insects.in);
   A.dripDuck=ctx.createGain();A.dripDuck.connect(A.bus.water.in);
@@ -672,7 +692,7 @@ function flutter(t,pan){
 }
 
 /* ---------- tuning / state sync ---------- */
-const TRIM={drone:.6,air:.9,water:.85,insects:1.15,voices:.9,pulse:1.1,bloom:1,user:1,keys:1,flow:3.8,grain:.95,shard:2.6,glow:6.5};
+const TRIM={drone:.6,air:.9,water:.85,insects:1.15,voices:.9,pulse:1.1,bloom:1,user:1,keys:1,duet:1,flow:3.8,grain:.95,shard:2.6,glow:6.5};
 const tap=v=>Math.pow(v,1.4);
 function natOn(){return S.ambient&&S.nature;}
 function layersOn(){return S.ambient&&S.layers;}
@@ -694,6 +714,7 @@ function applyLevels(slow,tc){
   A.bus.user.setLevel(tap(S.user)*TRIM.user,k);
   A.bus.play.setLevel(tap(S.user)*TRIM.user,k);
   A.bus.keys.setLevel(tap(S.keys)*TRIM.keys,k);
+  A.bus.duet.setLevel(tap(S.duet)*TRIM.duet,k);
   A.reverbOut.gain.setTargetAtTime(S.space*1.3,t,Math.max(.25,k));
   if(!fading)A.master.gain.setTargetAtTime(sq(S.volume)*1.1,slow?t+.1:t,slow?1.8:.1);
 }
@@ -842,7 +863,9 @@ function tick(){
       thump(tb,v);thump(tb+.23,v*.7);W.lastBeat=tb;later(tb,()=>{viz.heart=1;});
       const bpm=(34+36*W.energy)*(1+.08*(W.breath-.5));
       let nx=tb+60/bpm;
-      const fl=followLeader();
+      const cb=clapBeat(tb+.3);
+      const fl=cb?null:followLeader();
+      if(cb&&cb-tb<4)nx=cb;
       if(fl){const n2=beatAfter(fl.s,tb+.3,fl.mult);if(n2!=null&&n2-tb<4)nx=n2;}
       W.nextBeat=nx;
     }
@@ -2270,6 +2293,7 @@ async function toggleMic(){
   if(mic){mic.stop();return;}
   if(!ctx){toast('Tap Awaken first');return;}
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){toast('The microphone needs this page to be opened over https');return;}
+  if(DU.on){duetOff();$('#duet').classList.remove('open');}
   let stream;
   try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});}
   catch(e){toast('Microphone access was declined');return;}
@@ -2291,6 +2315,303 @@ async function toggleMic(){
   mr.start();b.textContent='■ Stop (30 s max)';b.classList.add('rec-on');
   tm=setTimeout(()=>{if(mic===mr&&mr.state!=='inactive')mr.stop();},30000);
 }
+
+/* ---- Duet: the world listens to you ---- */
+const DU={on:false,opts:{harm:true,answer:true,choir:false,key:false,clap:false},sens:.5,
+  stream:null,src:null,sp:null,mute:null,ring:null,rw:0,blockT:0,mic:0,outE:0,leak:0,noise:.004,calT:0,calAcc:null,
+  cur:null,phrase:null,unv:0,hv:null,busyUntil:0,hist:new Float64Array(12),keyAt:0,claps:[],lastClap:0,clapAvg:0,clap:null,level:0,voiced:false,lastF:0,notes:0,status:'off'};
+try{const o=JSON.parse(localStorage.getItem('biome.duet')||'{}');for(const k in DU.opts)if(typeof o[k]==='boolean')DU.opts[k]=o[k];if(typeof o.sens==='number')DU.sens=clamp(o.sens,0,1);}catch(e){}
+const saveDuet=()=>{try{localStorage.setItem('biome.duet',JSON.stringify(Object.assign({sens:DU.sens},DU.opts)));}catch(e){}};
+function pitchBlock(x,sr){ // [Hz, clarity] of a 2048-sample block; Hz 0 when not clearly pitched
+  const N=1024,minL=Math.floor(sr/1100),maxL=Math.min(Math.floor(sr/75),x.length-N-1);
+  let e0=0;for(let j=0;j<N;j+=2)e0+=x[j]*x[j];
+  if(e0<1e-7)return[0,0];
+  const c=DU.c||(DU.c=new Float32Array(1400));
+  let m=0;
+  for(let L=minL;L<=maxL;L++){
+    let s=0,e1=0;
+    for(let j=0;j<N;j+=2){const y=x[j+L];s+=x[j]*y;e1+=y*y;}
+    c[L]=s/Math.sqrt(e0*e1+1e-9);if(c[L]>m)m=c[L];
+  }
+  if(m<.8)return[0,m];
+  for(let L=minL+1;L<maxL;L++){
+    if(c[L]>c[L-1]&&c[L]>=c[L+1]&&c[L]>=.93*m){
+      const a=c[L-1],b=c[L],g=c[L+1],den=a-2*b+g,off=den?.5*(a-g)/den:0;
+      return[sr/(L+off),m];
+    }
+  }
+  return[0,m];
+}
+function duetOut(){ // how loud the world is right now
+  const an=A.an;if(!an)return 0;
+  if(!DU.ob)DU.ob=new Float32Array(an.fftSize);
+  if(an.getFloatTimeDomainData){an.getFloatTimeDomainData(DU.ob);let q=0;for(let i=0;i<DU.ob.length;i++)q+=DU.ob[i]*DU.ob[i];return Math.sqrt(q/DU.ob.length);}
+  const b=new Uint8Array(an.fftSize);an.getByteTimeDomainData(b);let q=0;for(let i=0;i<b.length;i++){const v=(b[i]-128)/128;q+=v*v;}return Math.sqrt(q/b.length);
+}
+async function duetOn(){
+  if(DU.on)return;
+  if(!ctx||!running){toast('Wake the world first');return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!ctx.createScriptProcessor){toast('The microphone needs this page to be opened over https');return;}
+  if(mic){toast('Stop the recording first');return;}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false}});}
+  catch(e){toast('Microphone access was declined');return;}
+  try{if(navigator.audioSession)navigator.audioSession.type='play-and-record';}catch(e){}
+  DU.stream=stream;
+  DU.src=ctx.createMediaStreamSource(stream);
+  DU.sp=ctx.createScriptProcessor(2048,1,1);
+  DU.mute=ctx.createGain();DU.mute.gain.value=0;
+  DU.src.connect(DU.sp);DU.sp.connect(DU.mute);DU.mute.connect(ctx.destination);
+  DU.ring=new Float32Array(Math.floor(ctx.sampleRate*6));DU.rw=0;
+  DU.on=true;DU.cur=null;DU.phrase=null;DU.unv=0;DU.hist.fill(0);DU.claps=[];DU.clap=null;DU.busyUntil=0;DU.keyAt=ctx.currentTime;
+  duetCalibrate();
+  DU.sp.onaudioprocess=duetBlock;
+  stream.getTracks().forEach(t=>t.addEventListener('ended',()=>duetOff()));
+  $('#duet').classList.add('open');$('#btnDuet').classList.add('on');
+}
+function duetCalibrate(){DU.calT=1.7;DU.calAcc={m:0,o:0,n:0};DU.status='Listening to the room… stay quiet a moment';}
+function duetOff(){
+  if(!DU.on)return;
+  DU.on=false;
+  try{DU.sp.onaudioprocess=null;DU.src.disconnect();DU.sp.disconnect();DU.mute.disconnect();}catch(e){}
+  try{DU.stream.getTracks().forEach(t=>t.stop());}catch(e){}
+  try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
+  harmRelease(1.2);
+  DU.stream=DU.src=DU.sp=DU.mute=null;if(DU.ring)DU.ring.fill(0);
+  DU.status='off';$('#btnDuet').classList.remove('on');
+}
+function duetBlock(e){
+  if(!DU.on||!ctx)return;
+  const x=e.inputBuffer.getChannelData(0),n=x.length,R=DU.ring,rl=R.length;
+  let q=0;
+  for(let i=0;i<n;i++){const v=x[i];R[(DU.rw+i)%rl]=v;q+=v*v;}
+  DU.rw+=n;DU.blockT=ctx.currentTime;
+  duetFrame(Math.sqrt(q/n),duetOut(),x,ctx.currentTime);
+}
+function duetThr(){return Math.max(.006,2.1*(DU.noise+DU.leak*DU.outE)*(1.5-DU.sens));}
+function duetFrame(rms,out,x,t){
+  const sr=ctx.sampleRate,dtB=2048/sr;
+  DU.mic=DU.mic*.6+rms*.4;DU.outE=DU.outE*.7+out*.3;
+  if(DU.calT>0){
+    DU.calAcc.m+=rms;DU.calAcc.o+=out;DU.calAcc.n++;DU.calT-=dtB;
+    if(DU.calT<=0){
+      const m=DU.calAcc.m/DU.calAcc.n,o=DU.calAcc.o/DU.calAcc.n;
+      DU.leak=o>.004?clamp(m/o,0,2.5):0;DU.noise=o>.004?.003:Math.max(.003,m);
+      DU.status='Listening — hum, sing or play a note';
+    }
+    return;
+  }
+  const thr=duetThr(),loud=rms>thr;
+  let f=0,conf=0;
+  if(loud){const r=pitchBlock(x,sr);f=r[0];conf=r[1];}
+  const voiced=loud&&f>0&&conf>=.88;
+  DU.voiced=voiced;if(voiced)DU.lastF=f;
+  DU.level=clamp(rms/(thr*4),0,1);
+  if(DU.opts.clap)clapStep(rms,thr,voiced,t);
+  noteStep(voiced,f,rms,t,dtB);
+  if(DU.opts.key&&(DU.kc=(DU.kc||0)+1)%44===0)keyStep(t);
+}
+function idxAt(t){return DU.rw-Math.round((DU.blockT-t)*ctx.sampleRate);}
+function noteStep(voiced,f,rms,t,dtB){
+  if(voiced){
+    const midi=69+12*Math.log2(f/440);
+    DU.unv=0;
+    const c=DU.cur;
+    if(c&&Math.abs(midi-c.m)<.7){
+      c.n++;c.m=c.m*.75+midi*.25;c.dur+=dtB;c.pk=Math.max(c.pk,rms);
+      if(!c.on&&c.n>=3){c.on=true;noteOn(c,t);}
+    }else{
+      if(c&&c.on)noteOff(c,t);
+      DU.cur={m:midi,n:1,dur:dtB,t0:t-dtB*1.5,on:false,pk:rms};
+    }
+  }else{
+    DU.unv+=dtB;
+    if(DU.cur&&DU.unv>.13){if(DU.cur.on)noteOff(DU.cur,t);DU.cur=null;}
+    if(DU.unv>.38&&DU.hv)harmRelease(1.8);
+    if(DU.phrase&&DU.unv>.6)phraseEnd(t);
+  }
+}
+function noteOn(c,t){
+  const f=440*Math.pow(2,(c.m-69)/12);
+  DU.notes++;
+  if(t>=DU.busyUntil){ // your turn: collect the phrase
+    if(!DU.phrase)DU.phrase={notes:[],t0:c.t0};
+    DU.phrase.notes.push({t:c.t0,midi:Math.round(c.m),f,dur:0});
+  }
+  if(DU.opts.harm)harmStart(f);
+  const pc=(((Math.round(c.m)-69)%12)+12)%12;
+  later(t,()=>ring(VW*(.1+.8*pc/12),VH*clamp(.8-.25*Math.log2(f/110),.12,.8),160));
+}
+function noteOff(c,t){
+  const ph=DU.phrase;
+  if(ph&&ph.notes.length){const nn=ph.notes[ph.notes.length-1];if(Math.abs(nn.t-c.t0)<.01)nn.dur=c.dur;}
+  const pc=(((Math.round(c.m)-69)%12)+12)%12;
+  DU.hist[pc]+=Math.min(c.dur,2);
+}
+// live harmony: soft voices a third and a fifth above (in the key) that bloom around the note you hold
+function harmVoice(t,f,pan){
+  const o=ctx.createOscillator(),o2=ctx.createOscillator(),g2=ctx.createGain(),lp=ctx.createBiquadFilter(),g=ctx.createGain(),p=mkPan(pan),sd=ctx.createGain();
+  o.type='triangle';o2.type='sine';o.frequency.value=f;o2.frequency.value=f*1.003;g2.gain.value=.6;
+  lp.type='lowpass';lp.frequency.value=Math.min(3500,f*5);lp.Q.value=.4;
+  o.connect(lp);o2.connect(g2);g2.connect(lp);lp.connect(g);g.connect(p);p.connect(A.bus.duet.in);
+  sd.gain.value=.45;p.connect(sd);sd.connect(A.bus.duet.wet);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.09,t+.5);
+  o.start(t);o2.start(t);
+  return{o,o2,g,nodes:[o,o2,g2,lp,g,p,sd]};
+}
+function harmStart(f){
+  harmRelease(.9);
+  const i=nearestIdx(f),t=ctx.currentTime+.02,vs=[],degs=[2,4];
+  if(Math.random()<.5)degs.push(-3);
+  for(const dg of degs){
+    let ff=ptf(i+dg);
+    while(ff>1500)ff/=2;
+    if(ff<90)continue;
+    vs.push(harmVoice(t,ff,rand(-.7,.7)));
+  }
+  DU.hv=vs;
+}
+function harmRelease(tc){
+  if(!DU.hv||!ctx)return;
+  const t=ctx.currentTime;
+  for(const v of DU.hv){
+    try{v.g.gain.cancelScheduledValues(t);v.g.gain.setTargetAtTime(0,t,tc/3);v.o.stop(t+tc+.3);v.o2.stop(t+tc+.3);}catch(e){}
+    v.o.onended=()=>{for(const n of v.nodes){try{n.disconnect();}catch(e){}}};
+  }
+  DU.hv=null;
+}
+// call and response
+function phraseEnd(t){
+  const ph=DU.phrase;DU.phrase=null;
+  if(!ph)return;
+  const notes=ph.notes.filter(n=>n.dur>=.12);
+  if(!notes.length)return;
+  const last=notes[notes.length-1],total=last.t+last.dur-notes[0].t;
+  if(notes.length<2&&total<.5)return;
+  if(ctx.currentTime<DU.busyUntil)return;
+  const at=ctx.currentTime+rand(.5,1.1);
+  DU.busyUntil=at+2;
+  if(DU.opts.answer)duetAnswer(notes,at);
+  if(DU.opts.choir){const best=notes.reduce((a,b)=>b.dur>a.dur?b:a);duetChoir(best,at+.3);}
+}
+function duetAnswer(notes,at){
+  const idx=notes.map(n=>nearestIdx(n.f)).slice(0,8),tm=notes.slice(0,8).map(n=>n.t-notes[0].t),kind=pick(['third','fifth','invert','retro']);
+  let seq=idx.slice();
+  if(kind==='third')seq=seq.map(i=>i+2);
+  else if(kind==='fifth')seq=seq.map(i=>i+4);
+  else if(kind==='invert')seq=seq.map(i=>idx[0]-(i-idx[0]));
+  else seq.reverse();
+  const stretch=pick([.9,1,1.15]);
+  let end=at,sum=0;
+  seq.forEach((i,k)=>{
+    let f=ptf(i);while(f>1500)f/=2;while(f<110)f*=2;
+    const tt=at+tm[k]*stretch;
+    pluck(tt,f,.22*(1-.04*k),clamp((notes[k]?notes[k].midi%12:0)/6-1,-.8,.8),.8,A.bus.duet);
+    later(tt,()=>ring(VW*clamp(.1+.8*Math.log2(f/110)/4,.08,.92),VH*.28,200));
+    end=Math.max(end,tt);sum+=f;
+  });
+  DU.busyUntil=Math.max(DU.busyUntil,end+2.4);
+  DU.status='Answered with '+({third:'a third up',fifth:'a fifth up',invert:'your phrase turned over',retro:'your phrase reversed'})[kind];
+  if(Math.random()<.4){ // sometimes your phrase leaves a bloom behind
+    const mf=sum/seq.length*1.5,y=VH*clamp(1-Math.log(mf/170)/Math.log(2600/170),.12,.8),x=VW*rand(.15,.85);
+    setTimeout(()=>{if(running)plantBloom(x,y);},Math.max(0,(at+.3-ctx.currentTime)*1000));
+  }
+}
+// your own voice, held and sung back as a choir on the current chord
+async function duetChoir(note,at){
+  if(DU.choirBusy)return;
+  const sr=ctx.sampleRate,len=Math.min(.6,note.dur-.08);
+  if(len<.2)return;
+  const a=idxAt(note.t+.05),n=Math.floor(len*sr);
+  if(a<DU.rw-DU.ring.length+n+8||a+n>DU.rw)return;
+  const x=new Float32Array(n>>1),R=DU.ring,rl=R.length;
+  for(let i=0;i<x.length;i++)x[i]=(R[(a+2*i)%rl]+R[(a+2*i+1)%rl])*.5;
+  const rm=rmsOf(x);
+  if(rm<.003)return;
+  DU.choirBusy=true;
+  let buf;
+  try{buf=await smearLoop(x,sr/2,65536);}catch(e){DU.choirBusy=false;return;}
+  DU.choirBusy=false;
+  if(!DU.on||!ctx)return;
+  const t0=Math.max(ctx.currentTime+.1,at),dur=rand(9,13),gain=clamp(.11/rm,.3,40);
+  [[0,0,-.6],[2,0,0],[4,1,.6]].forEach(([off,oct,pan])=>{
+    let r=noteHz(W.d+off)*Math.pow(2,oct)/note.f;
+    while(r>1.5)r/=2;while(r<.67)r*=2;
+    const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;src.playbackRate.value=r;
+    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2600;
+    const g=ctx.createGain(),p=mkPan(pan),sd=ctx.createGain();
+    g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(.55*gain,t0+2.4);g.gain.setValueAtTime(.55*gain,t0+dur-4);g.gain.linearRampToValueAtTime(0,t0+dur);
+    src.connect(lp);lp.connect(g);g.connect(p);p.connect(A.bus.duet.in);sd.gain.value=.5;p.connect(sd);sd.connect(A.bus.duet.wet);
+    src.start(t0,Math.random()*buf.duration);src.stop(t0+dur+.1);
+    src.onended=()=>{for(const q of [src,lp,g,p,sd]){try{q.disconnect();}catch(e){}}};
+  });
+  DU.status='Singing your voice back as a choir';
+}
+// follow the key you sing in
+function keyStep(t){
+  const h=DU.hist;
+  for(let i=0;i<12;i++)h[i]*=.985;
+  let total=0;for(let i=0;i<12;i++)total+=h[i];
+  if(total<6)return;
+  const score=(r,name)=>{
+    const sc=MODES[name],set=new Set(sc.map(d=>(r+d)%12));let s=0;
+    for(let pc=0;pc<12;pc++)s+=h[pc]*(set.has(pc)?1:-.7);
+    return s+.6*h[r]+.3*h[(r+7)%12]-.15*total*(sc.length-5)/7;
+  };
+  let best=-1e9,br=0,bn='';
+  for(let r=0;r<12;r++)for(const name in MODES){const s=score(r,name);if(s>best){best=s;br=r;bn=name;}}
+  const cur=score(W.rootSemi,W.modeName);
+  if((br!==W.rootSemi||bn!==W.modeName)&&best-cur>=1.5&&t-DU.keyAt>40){
+    DU.keyAt=t;setKey(br,bn);toast('The key follows you: '+NOTE[br]+' '+bn,4200);
+  }
+}
+// clap a tempo: the heartbeat follows
+function clapStep(rms,thr,voiced,t){
+  const prev=DU.clapAvg;DU.clapAvg=prev*.75+rms*.25;
+  if(voiced||rms<thr*1.4||rms<prev*2.6+.003||t-DU.lastClap<.18)return;
+  DU.lastClap=t;
+  const ct=t-.03;
+  DU.claps.push(ct);if(DU.claps.length>6)DU.claps.shift();
+  const a=DU.claps;
+  if(a.length<4)return;
+  const iv=[];for(let i=a.length-4;i<a.length-1;i++)iv.push(a[i+1]-a[i]);
+  const s=iv.slice().sort((p,q)=>p-q),M=s[1];
+  if(M>=.25&&M<=1.6&&iv.every(v=>Math.abs(v-M)<.18*M)){
+    if(!DU.clap)toast('The heartbeat follows your clap',3200);
+    DU.clap={P:M,t0:ct,at:t};
+    DU.status='Clap tempo ≈ '+Math.round(60/M)+' BPM';
+  }
+}
+function clapBeat(tb){ // next heartbeat on the clapped grid, folded into a resting range
+  const c=DU.clap;
+  if(!DU.on||!c||!ctx||ctx.currentTime-c.at>25)return null;
+  let P=c.P;
+  while(60/P>72)P*=2;
+  while(60/P<34&&P>.2)P/=2;
+  const k=Math.ceil((tb-c.t0)/P-1e-6);
+  return c.t0+k*P;
+}
+// the Duet card
+(function(){
+  const box=$('#duOpts');
+  const defs=[['harm','Harmonise'],['answer','Answer'],['choir','Sing me back'],['key','Follow my key'],['clap','Clap tempo']],els={};
+  defs.forEach(([k,l])=>{els[k]=chip(box,l,()=>{DU.opts[k]=!DU.opts[k];els[k].classList.toggle('on',DU.opts[k]);if(k==='harm'&&!DU.opts.harm)harmRelease(.6);saveDuet();});els[k].classList.toggle('on',DU.opts[k]);});
+  chip(box,'Listen again',()=>{if(DU.on)duetCalibrate();else toast('Switch Duet on first');});
+  const sl=$('#duSens'),sv=$('#duSensV');
+  sl.value=DU.sens;sv.textContent=Math.round(DU.sens*100)+'%';
+  sl.addEventListener('input',()=>{DU.sens=+sl.value;sv.textContent=Math.round(DU.sens*100)+'%';saveDuet();});
+  $('#btnDuet').addEventListener('click',()=>{if(DU.on)duetOff();else duetOn();$('#duet').classList.toggle('open',DU.on);hideHint();});
+  $('#duClose').addEventListener('click',()=>{duetOff();$('#duet').classList.remove('open');});
+  setInterval(()=>{
+    if(!DU.on||document.hidden)return;
+    $('#duBar').style.width=Math.round(DU.level*100)+'%';
+    if(DU.cur&&DU.cur.on&&DU.voiced){
+      const m=DU.cur.m,n=Math.round(m),cents=Math.round((m-n)*100);
+      $('#duNote').textContent=NOTE[((n-69)%12+12)%12]+(Math.floor(n/12)-1)+(cents?(cents>0?' +':' −')+Math.abs(cents):'');
+    }else $('#duNote').textContent='—';
+    $('#duStat').textContent=DU.status;
+  },120);
+})();
 
 /* ---- resample: record what the world is playing, then play it back as a sound ---- */
 let rs=null,rsSrc='all';
@@ -2409,7 +2730,7 @@ try{scenes=JSON.parse(localStorage.getItem('biome.scenes')||'[]');if(!Array.isAr
 scenes=scenes.filter(o=>o&&o.s&&Array.isArray(o.key));
 scenes.forEach(o=>{if(!o.id)o.id=uid();});
 const saveScenes=()=>{try{localStorage.setItem('biome.scenes',JSON.stringify(scenes));return true;}catch(e){toast('Couldn’t store scenes in this browser');return false;}};
-const SCENE_KEYS=['drone','flow','grain','shard','glow','air','water','insects','voices','pulse','blooms','user','keys','space','vitality','volume','dayMin','ambient','layers','nature','drift'];
+const SCENE_KEYS=['drone','flow','grain','shard','glow','air','water','insects','voices','pulse','blooms','user','keys','duet','space','vitality','volume','dayMin','ambient','layers','nature','drift'];
 function captureScene(name,keep){
   const o={id:keep&&keep.id||uid(),name,saved:Date.now(),s:{},key:[W.rootSemi,W.modeName],lock:S.keyLock,phase:W.phase,sounds:{},blooms:[]};
   SCENE_KEYS.forEach(k=>{o.s[k]=S[k];});
@@ -3092,14 +3413,14 @@ const FADERS=[
   ['glow','Glow','sparkle on water',0,1,.01],
   ['air','Air','wind & whistle',0,1,.01],['water','Water','drips & rain',0,1,.01],
   ['insects','Insects','chorus',0,1,.01],['voices','Voices','birds & owls',0,1,.01],['pulse','Pulse','heartbeat',0,1,.01],
-  ['blooms','Blooms','planted by touch',0,1,.01],['user','Your sounds','uploaded & recorded',0,1,.01],['keys','Keyboard','in-key notes',0,1,.01],
+  ['blooms','Blooms','planted by touch',0,1,.01],['user','Your sounds','uploaded & recorded',0,1,.01],['keys','Keyboard','in-key notes',0,1,.01],['duet','Duet','answers to your voice',0,1,.01],
   ['space','Space','reverb',0,1,.01],['vitality','Vitality','how alive it feels',0,1,.01],['volume','Volume','',0,1,.01],
   ['dayMin','Day length','one full day',2,60,1],
   ['time','Time of day','',0,24,.05]
 ];
 const FBOX={drone:'#f-layers',flow:'#f-layers',grain:'#f-layers',shard:'#f-layers',glow:'#f-layers',
   air:'#f-nature',water:'#f-nature',insects:'#f-nature',voices:'#f-nature',pulse:'#f-nature',
-  blooms:'#f-played',user:'#f-played',keys:'#f-played',dayMin:'#wfaders',time:'#wfaders'};
+  blooms:'#f-played',user:'#f-played',keys:'#f-played',duet:'#f-played',dayMin:'#wfaders',time:'#wfaders'};
 const faderEls={};
 FADERS.forEach(([k,name,sub,min,max,step])=>{
   const l=document.createElement('label');l.className='fader';
