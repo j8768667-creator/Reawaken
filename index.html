@@ -2351,6 +2351,7 @@ function duetOut(){ // how loud the world is right now
 function micErr(e){
   const n=(e&&e.name)||'';const tag=' ('+(n||'error')+')';
   if(n==='NotFoundError'||n==='OverconstrainedError')return 'No microphone was found on this device'+tag;
+  if(n==='InvalidStateError')return 'Safari could not start the microphone. Close other tabs or apps that use it, disconnect Bluetooth headphones, then reload and try again'+tag;
   if(n==='NotReadableError'||n==='AbortError')return 'The microphone is busy in another app. Close it and try again'+tag;
   let framed=false;try{framed=window.top!==window;}catch(_){framed=true;}
   if(framed)return 'The microphone is blocked because this page is embedded. Open it directly in Safari'+tag;
@@ -2362,10 +2363,17 @@ async function duetOn(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!ctx.createScriptProcessor){toast('The microphone needs this page to be opened over https');return;}
   if(mic){toast('Stop the recording first');return;}
   let stream;
-  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false}});}
+  try{if(navigator.audioSession)navigator.audioSession.type='play-and-record';}catch(e){}
+  const gum=c=>navigator.mediaDevices.getUserMedia(c);
+  try{stream=await gum({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false}});}
   catch(e){
-    try{stream=await navigator.mediaDevices.getUserMedia({audio:true});}
-    catch(e2){toast(micErr(e2));return;}
+    try{stream=await gum({audio:true});}
+    catch(e2){
+      if(e2&&e2.name==='InvalidStateError'){
+        await new Promise(r=>setTimeout(r,500));
+        try{stream=await gum({audio:true});}catch(e3){toast(micErr(e3));return;}
+      }else{toast(micErr(e2));return;}
+    }
   }
   try{if(navigator.audioSession)navigator.audioSession.type='play-and-record';}catch(e){}
   DU.stream=stream;
