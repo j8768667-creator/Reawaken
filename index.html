@@ -2296,7 +2296,7 @@ async function toggleMic(){
   if(DU.on){duetOff();$('#duet').classList.remove('open');}
   let stream;
   try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});}
-  catch(e){toast('Microphone access was declined');return;}
+  catch(e){toast(micErr(e));return;}
   const mime=pickMime(),chunks=[];let mr,tm;
   try{mr=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);}
   catch(e){stream.getTracks().forEach(t=>t.stop());toast('Couldn’t start the microphone');return;}
@@ -2348,6 +2348,14 @@ function duetOut(){ // how loud the world is right now
   if(an.getFloatTimeDomainData){an.getFloatTimeDomainData(DU.ob);let q=0;for(let i=0;i<DU.ob.length;i++)q+=DU.ob[i]*DU.ob[i];return Math.sqrt(q/DU.ob.length);}
   const b=new Uint8Array(an.fftSize);an.getByteTimeDomainData(b);let q=0;for(let i=0;i<b.length;i++){const v=(b[i]-128)/128;q+=v*v;}return Math.sqrt(q/b.length);
 }
+function micErr(e){
+  const n=(e&&e.name)||'';
+  if(n==='NotFoundError'||n==='OverconstrainedError')return 'No microphone was found on this device';
+  if(n==='NotReadableError'||n==='AbortError')return 'The microphone is busy in another app. Close it and try again';
+  let framed=false;try{framed=window.top!==window;}catch(_){framed=true;}
+  if(framed)return 'The microphone is blocked because this page is embedded. Open it directly in Safari';
+  return 'Microphone blocked. In Safari tap aA, then Website Settings, then Microphone, and choose Allow';
+}
 async function duetOn(){
   if(DU.on)return;
   if(!ctx||!running){toast('Wake the world first');return;}
@@ -2355,7 +2363,7 @@ async function duetOn(){
   if(mic){toast('Stop the recording first');return;}
   let stream;
   try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false}});}
-  catch(e){toast('Microphone access was declined');return;}
+  catch(e){toast(micErr(e));return;}
   try{if(navigator.audioSession)navigator.audioSession.type='play-and-record';}catch(e){}
   DU.stream=stream;
   DU.src=ctx.createMediaStreamSource(stream);
