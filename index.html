@@ -160,6 +160,32 @@ input[type=text]:focus{outline:none;border-color:rgba(143,227,200,.7)}
 .key.chord{background:rgba(143,227,200,.16);color:var(--fg)}
 .key.root{background:rgba(143,227,200,.3);border-color:rgba(143,227,200,.7);color:#fff}
 .key.down{background:rgba(255,255,255,.42);transform:translateY(3px);color:#06090f}
+
+#hudR{flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 210px)}
+#paint{position:fixed;inset:0;z-index:9;display:flex;flex-direction:column;
+  padding:calc(var(--st) + 12px) calc(var(--sr) + 14px) calc(var(--sb) + 12px) calc(var(--sl) + 14px);
+  background:rgba(5,8,14,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  opacity:0;visibility:hidden;transition:opacity .35s,visibility .35s}
+#paint.open{opacity:1;visibility:visible}
+#paint .ptop{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+#paint .ptop b{font-size:17px}
+#paint .ptop span{flex:1;color:var(--dim);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#psBar{display:flex;flex-wrap:wrap}
+#psCv{flex:1;min-height:0;width:100%;border-radius:16px;border:1px solid var(--line);touch-action:none;display:block;background:#090d14}
+#paint .legend{margin:8px 2px 0;font-size:12px}
+#comp{position:fixed;left:50%;top:calc(var(--st) + 66px);width:min(430px,calc(100% - 20px));z-index:8;padding:12px 14px;border-radius:20px;
+  background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  transform:translate(-50%,-140%);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+#comp.open{transform:translate(-50%,0)}
+#comp .dtop{display:flex;align-items:center;gap:10px}
+#comp .dtop b{font-size:15px}
+#comp .dtop span{flex:1;color:var(--dim);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cpTitle{font-size:20px;font-weight:600;margin:8px 0 8px}
+#cpMap{display:flex;gap:3px;margin-bottom:10px}
+#cpMap div{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;font-size:11px;color:var(--dim);padding:6px 2px;border-radius:8px;background:rgba(255,255,255,.07);transition:background .4s,color .4s}
+#cpMap div.on{background:rgba(143,227,200,.3);color:#fff}
+#comp .legend{margin:6px 0 0;font-size:12px}
+@media(max-width:900px){#hudR{gap:7px}#hudR .pill{padding:0 14px}#duet,#comp{top:calc(var(--st) + 132px)}}
 </style>
 </head>
 <body>
@@ -167,7 +193,7 @@ input[type=text]:focus{outline:none;border-color:rgba(143,227,200,.7)}
 
 <div id="hud">
   <div><div id="world">&nbsp;</div><div id="mood">&nbsp;</div></div>
-  <div id="hudR"><button class="pill on" id="btnAmb">Ambience on</button><button class="pill" id="btnKeys">Keys</button><button class="pill" id="btnDuet">Duet</button><button class="pill" id="btnMix">Controls</button><button class="pill" id="btnRest">Rest</button></div>
+  <div id="hudR"><button class="pill on" id="btnAmb">Ambience on</button><button class="pill" id="btnKeys">Keys</button><button class="pill" id="btnPaint">Paint</button><button class="pill" id="btnComp">Compose</button><button class="pill" id="btnDuet">Duet</button><button class="pill" id="btnMix">Controls</button><button class="pill" id="btnRest">Rest</button></div>
 </div>
 
 <div id="hint">Tap to touch the water · hold to plant a bloom · drag to stir the wind</div>
@@ -253,6 +279,21 @@ input[type=text]:focus{outline:none;border-color:rgba(143,227,200,.7)}
   </div>
 </section>
 <div id="toast"></div>
+<div id="comp" aria-label="Composer">
+  <div class="dtop"><b>Composer</b><span id="cpStat"></span><button class="pill sm" id="cpClose">Stop</button></div>
+  <div id="cpTitle"></div>
+  <div id="cpMap"></div>
+  <div class="chips" id="cpOpts"></div>
+  <div class="seg" id="cpLen"></div><span class="chips" id="cpAct" style="display:inline-flex;margin:0"></span>
+  <label class="fader"><span class="lab"><b>Pace</b><small>from the next piece</small><i id="cpPaceV"></i></span><input type="range" id="cpPace" min="0" max="1" step="0.01"></label>
+  <p class="legend">Biome writes a short piece in the world's key, with a theme that returns. The key may move in the middle and come home. The other layers follow along.</p>
+</div>
+<div id="paint" aria-label="Paint a sound">
+  <div class="ptop"><b>Paint a sound</b><span id="psStat"></span><button class="pill sm" id="psClose">Close</button></div>
+  <div id="psBar"></div>
+  <canvas id="psCv"></canvas>
+  <p class="legend">Time runs left to right and pitch rises upwards. Tone paints notes and Air paints breath and hiss. Snap to key keeps your notes in the world's scale. Press Play to hear the loop.</p>
+</div>
 <div id="duet" aria-label="Duet">
   <div class="dtop"><b>Duet</b><span id="duStat">off</span><button class="pill sm" id="duClose">Close</button></div>
   <div class="dread"><div class="dnote" id="duNote">—</div><div class="dmeter"><i id="duBar"></i></div></div>
@@ -318,7 +359,7 @@ document.addEventListener('contextmenu',ev=>ev.preventDefault());
 /* ============================================================
    Settings
    ============================================================ */
-const S={drone:.7,air:.6,water:.6,insects:.65,voices:.65,pulse:.4,blooms:.65,user:.75,space:.55,vitality:.55,volume:.8,dayMin:12,hold:false,ambient:true,keyRoot:-1,keyMode:'',keyLock:false,drift:0,keys:.75,duet:.75,flow:.6,grain:.55,shard:.5,glow:.5,layers:true,nature:true};
+const S={drone:.7,air:.6,water:.6,insects:.65,voices:.65,pulse:.4,blooms:.65,user:.75,space:.55,vitality:.55,volume:.8,dayMin:12,hold:false,ambient:true,keyRoot:-1,keyMode:'',keyLock:false,drift:0,keys:.75,duet:.75,paint:.8,comp:.75,flow:.6,grain:.55,shard:.5,glow:.5,layers:true,nature:true};
 try{const o=JSON.parse(localStorage.getItem('biome.v1')||'{}');for(const k in S)if(k in o&&typeof o[k]===typeof S[k])S[k]=o[k];}catch(e){}
 const save=()=>{try{localStorage.setItem('biome.v1',JSON.stringify(S));}catch(e){}};
 
@@ -460,7 +501,7 @@ function build(){
   A.reverbIn.connect(conv);conv.connect(rhp);rhp.connect(A.reverbOut);A.reverbOut.connect(A.masterIn);
 
   A.duckDry=ctx.createGain();A.duckDry.connect(A.masterIn);A.duckWet=ctx.createGain();A.duckWet.connect(A.reverbIn);A.duckEnv=0;
-  A.bus={drone:bus(.35),wind:bus(.25),water:bus(.3),insects:bus(.3),voices:bus(.3),pulse:bus(.05),bloom:bus(.45),user:bus(.4),keys:bus(.5),flow:bus(.55),grain:bus(.65),shard:bus(.5),glow:bus(.45),play:bus(.1,true),duet:bus(.5)};
+  A.bus={drone:bus(.35),wind:bus(.25),water:bus(.3),insects:bus(.3),voices:bus(.3),pulse:bus(.05),bloom:bus(.45),user:bus(.4),keys:bus(.5),flow:bus(.55),grain:bus(.65),shard:bus(.5),glow:bus(.45),play:bus(.1,true),duet:bus(.5),paint:bus(.45),comp:bus(.5)};
   A.plAn=ctx.createAnalyser();A.plAn.fftSize=1024;A.plAn.smoothingTimeConstant=0;A.bus.play.in.connect(A.plAn);A.plBuf=new Float32Array(1024);
   A.insDuck=ctx.createGain();A.insDuck.connect(A.bus.insects.in);
   A.dripDuck=ctx.createGain();A.dripDuck.connect(A.bus.water.in);
@@ -692,7 +733,7 @@ function flutter(t,pan){
 }
 
 /* ---------- tuning / state sync ---------- */
-const TRIM={drone:.6,air:.9,water:.85,insects:1.15,voices:.9,pulse:1.1,bloom:1,user:1,keys:1,duet:1,flow:3.8,grain:.95,shard:2.6,glow:6.5};
+const TRIM={drone:.6,air:.9,water:.85,insects:1.15,voices:.9,pulse:1.1,bloom:1,user:1,keys:1,duet:1,paint:1,comp:1.5,flow:3.8,grain:.95,shard:2.6,glow:6.5};
 const tap=v=>Math.pow(v,1.4);
 function natOn(){return S.ambient&&S.nature;}
 function layersOn(){return S.ambient&&S.layers;}
@@ -715,6 +756,8 @@ function applyLevels(slow,tc){
   A.bus.play.setLevel(tap(S.user)*TRIM.user,k);
   A.bus.keys.setLevel(tap(S.keys)*TRIM.keys,k);
   A.bus.duet.setLevel(tap(S.duet)*TRIM.duet,k);
+  A.bus.paint.setLevel(tap(S.paint)*TRIM.paint,k);
+  A.bus.comp.setLevel(tap(S.comp)*TRIM.comp,k);
   A.reverbOut.gain.setTargetAtTime(S.space*1.3,t,Math.max(.25,k));
   if(!fading)A.master.gain.setTargetAtTime(sq(S.volume)*1.1,slow?t+.1:t,slow?1.8:.1);
 }
@@ -735,7 +778,7 @@ function tick(){
     else W.phase=(W.phase+Math.sign(df)*Math.min(Math.abs(df),dt*.06)+1)%1;
   }
   updateSky();
-  const eM=clamp(S.vitality*(.6+.3*W.light+.5*W.dawn),0,1);
+  const eM=clamp(S.vitality*(.6+.3*W.light+.5*W.dawn)+(CP.on?.12*CP.inten:0),0,1);
   W.energy=clamp(ou(W.energy,eM,.07,.07,dt),0,1);
   W.tension=Math.max(0,W.tension-dt/18);
   W.bj=ou(W.bj,0,.15,.5,dt);
@@ -837,7 +880,7 @@ function tick(){
   }
 
   /* ---- your sounds & planted blooms ---- */
-  userTick(t,dt);bloomsTick(t,dt);kbTick(t);
+  userTick(t,dt);bloomsTick(t,dt);kbTick(t);compTick(t,dt);
   if(layersOn()){
     if(S.flow>.01)flowTick(t,dt);
     if(S.grain>.01)grainTick(t,dt);
@@ -863,7 +906,7 @@ function tick(){
       thump(tb,v);thump(tb+.23,v*.7);W.lastBeat=tb;later(tb,()=>{viz.heart=1;});
       const bpm=(34+36*W.energy)*(1+.08*(W.breath-.5));
       let nx=tb+60/bpm;
-      const cb=clapBeat(tb+.3);
+      let cb=clapBeat(tb+.3);if(!cb)cb=cpBeat(tb+.3);
       const fl=cb?null:followLeader();
       if(cb&&cb-tb<4)nx=cb;
       if(fl){const n2=beatAfter(fl.s,tb+.3,fl.mult);if(n2!=null&&n2-tb<4)nx=n2;}
@@ -2749,7 +2792,7 @@ try{scenes=JSON.parse(localStorage.getItem('biome.scenes')||'[]');if(!Array.isAr
 scenes=scenes.filter(o=>o&&o.s&&Array.isArray(o.key));
 scenes.forEach(o=>{if(!o.id)o.id=uid();});
 const saveScenes=()=>{try{localStorage.setItem('biome.scenes',JSON.stringify(scenes));return true;}catch(e){toast('Couldn’t store scenes in this browser');return false;}};
-const SCENE_KEYS=['drone','flow','grain','shard','glow','air','water','insects','voices','pulse','blooms','user','keys','duet','space','vitality','volume','dayMin','ambient','layers','nature','drift'];
+const SCENE_KEYS=['drone','flow','grain','shard','glow','air','water','insects','voices','pulse','blooms','user','keys','duet','paint','comp','space','vitality','volume','dayMin','ambient','layers','nature','drift'];
 function captureScene(name,keep){
   const o={id:keep&&keep.id||uid(),name,saved:Date.now(),s:{},key:[W.rootSemi,W.modeName],lock:S.keyLock,phase:W.phase,sounds:{},blooms:[]};
   SCENE_KEYS.forEach(k=>{o.s[k]=S[k];});
@@ -3432,14 +3475,14 @@ const FADERS=[
   ['glow','Glow','sparkle on water',0,1,.01],
   ['air','Air','wind & whistle',0,1,.01],['water','Water','drips & rain',0,1,.01],
   ['insects','Insects','chorus',0,1,.01],['voices','Voices','birds & owls',0,1,.01],['pulse','Pulse','heartbeat',0,1,.01],
-  ['blooms','Blooms','planted by touch',0,1,.01],['user','Your sounds','uploaded & recorded',0,1,.01],['keys','Keyboard','in-key notes',0,1,.01],['duet','Duet','answers to your voice',0,1,.01],
+  ['blooms','Blooms','planted by touch',0,1,.01],['user','Your sounds','uploaded & recorded',0,1,.01],['keys','Keyboard','in-key notes',0,1,.01],['duet','Duet','answers to your voice',0,1,.01],['paint','Paint','your painted sounds',0,1,.01],['comp','Composer','written pieces',0,1,.01],
   ['space','Space','reverb',0,1,.01],['vitality','Vitality','how alive it feels',0,1,.01],['volume','Volume','',0,1,.01],
   ['dayMin','Day length','one full day',2,60,1],
   ['time','Time of day','',0,24,.05]
 ];
 const FBOX={drone:'#f-layers',flow:'#f-layers',grain:'#f-layers',shard:'#f-layers',glow:'#f-layers',
   air:'#f-nature',water:'#f-nature',insects:'#f-nature',voices:'#f-nature',pulse:'#f-nature',
-  blooms:'#f-played',user:'#f-played',keys:'#f-played',duet:'#f-played',dayMin:'#wfaders',time:'#wfaders'};
+  blooms:'#f-played',user:'#f-played',keys:'#f-played',duet:'#f-played',paint:'#f-played',comp:'#f-played',dayMin:'#wfaders',time:'#wfaders'};
 const faderEls={};
 FADERS.forEach(([k,name,sub,min,max,step])=>{
   const l=document.createElement('label');l.className='fader';
@@ -3481,6 +3524,529 @@ async function wake(){
 }
 btnRest.addEventListener('click',()=>{if(running)rest();else wake();});
 function hideHint(){$('#hint').classList.add('gone');}
+
+/* ============================================================
+   Paint a sound — draw a spectrogram with your finger and hear it become sound
+   ============================================================ */
+const PS={on:false,cols:240,rows:168,secs:12,tool:'tone',size:1,snap:true,timbre:'warm',hush:true,
+  src:null,g:null,t0:0,playing:false,busy:false,again:false,rtok:0,buf:null,out:null,live:null,pid:-1,lx:-1,ly:-1,
+  dirty:true,saveT:0,sketchI:0,raf:0,kept:0,cv:null,im:null,imd:null,stat:''};
+PS.T=new Float32Array(PS.cols*PS.rows);PS.N=new Float32Array(PS.cols*PS.rows);
+const PS_SR=22050;
+const psF=r=>55*Math.pow(2,r/24); // row 0 = A1, two rows per semitone
+const psInScale=r=>{if(r%2)return false;const s=((r/2-W.rootSemi)%12+12)%12;return W.scale.includes(s);};
+function psSnapRow(r){
+  const c=Math.round(r/2)*2;let best=c,bd=1e9;
+  for(let d=-10;d<=10;d+=2){const q=c+d;if(q<0||q>=PS.rows)continue;if(psInScale(q)&&Math.abs(q-r)<bd){bd=Math.abs(q-r);best=q;}}
+  return best;
+}
+const PS_RAD=[[1.2,2],[2.6,4],[5,7]]; // brush radius: [semitones, columns]
+function psStamp(cx,ry,str,erase){
+  const R=PS.rows,C=PS.cols,rs=PS_RAD[PS.size],ryR=rs[0]*2,rcX=rs[1];
+  const c0=Math.max(0,Math.floor(cx-rcX)),c1=Math.min(C-1,Math.ceil(cx+rcX));
+  const r0=Math.max(0,Math.floor(ry-ryR)),r1=Math.min(R-1,Math.ceil(ry+ryR));
+  const arr=PS.tool==='air'?PS.N:PS.T,snap=PS.tool==='tone'&&PS.snap&&!erase;
+  for(let c=c0;c<=c1;c++){
+    const dx=(c-cx)/rcX;
+    for(let r=r0;r<=r1;r++){
+      const dy=(r-ry)/ryR,d2=dx*dx+dy*dy;if(d2>=1)continue;
+      let w=1-d2;w*=w;const i=c*R+r;
+      if(erase){PS.T[i]=Math.max(0,PS.T[i]-str*w*1.6);PS.N[i]=Math.max(0,PS.N[i]-str*w*1.6);}
+      else{if(snap&&!psInScale(r))continue;arr[i]=Math.min(1,arr[i]+str*w);}
+    }
+  }
+  PS.dirty=true;
+}
+function psClear(){PS.T.fill(0);PS.N.fill(0);PS.dirty=true;psQueue();psSave();}
+
+/* ---- the live voice you hear while the finger is down ---- */
+function psLiveStart(f){
+  psLiveStop(true);
+  if(!ctx||!running||PS.tool==='erase')return;
+  const t=ctx.currentTime,g=ctx.createGain();g.gain.value=0;g.connect(A.bus.paint.in);
+  if(PS.tool==='air'){
+    const n=noiseSrc(),bp=ctx.createBiquadFilter();bp.type='bandpass';bp.Q.value=3;bp.frequency.value=f;
+    n.connect(bp);bp.connect(g);PS.live={g,bp,n};g.gain.setTargetAtTime(.9,t,.04);
+  }else{
+    const o=ctx.createOscillator();o.type='sine';o.frequency.value=f;o.connect(g);o.start(t);
+    PS.live={g,o};g.gain.setTargetAtTime(.1,t,.03);
+  }
+}
+function psLiveMove(f){
+  const L=PS.live;if(!L||!ctx)return;const t=ctx.currentTime;
+  if(L.o)L.o.frequency.setTargetAtTime(f,t,.025);else L.bp.frequency.setTargetAtTime(f,t,.025);
+}
+function psLiveStop(now){
+  const L=PS.live;if(!L)return;PS.live=null;
+  const t=ctx.currentTime;L.g.gain.cancelScheduledValues(t);L.g.gain.setTargetAtTime(0,t,now?.01:.06);
+  setTimeout(()=>{try{if(L.o)L.o.stop();if(L.n)L.n.stop();L.g.disconnect();}catch(e){}},400);
+}
+
+/* ---- rendering: a bank of oscillators, one per painted row ---- */
+async function psRender(tok){
+  const C=PS.cols,R=PS.rows,sr=PS_SR,n=Math.floor(PS.secs*sr),out=new Float32Array(n),spc=n/C;
+  const hh=PS.timbre==='pure'?[0,0,0]:PS.timbre==='warm'?[.35,.14,0]:[0,.45,.22];
+  const BL=32,nb=Math.ceil(n/BL);let t0=performance.now(),any=false;
+  for(let r=0;r<R;r++){
+    const f=psF(r);if(f>8000)break;
+    for(let kind=0;kind<2;kind++){
+      const arr=kind?PS.N:PS.T;let used=false;
+      for(let c=0;c<C;c++)if(arr[c*R+r]>.01){used=true;break;}
+      if(!used)continue;any=true;
+      const w0=TAU*f/sr,bw=Math.max(f*.06,30),h2=f*2<10000?hh[0]:0,h3=f*3<10000?hh[1]:0,h5=f*5<10000?hh[2]:0,harm=h2||h3||h5;
+      let ph=Math.random()*TAU,re=Math.cos(ph),im=Math.sin(ph),cw=Math.cos(w0),sw=Math.sin(w0),rn=0,aPrev=arr[r];
+      for(let b=0;b<nb;b++){
+        const i0=b*BL,i1=Math.min(n,i0+BL),cf=(i0+BL/2)/spc-.5,c0=clamp(Math.floor(cf),0,C-1),c1=Math.min(C-1,c0+1),fr=clamp(cf-c0,0,1);
+        const aNew=arr[c0*R+r]*(1-fr)+arr[c1*R+r]*fr;
+        if(aNew<1e-4&&aPrev<1e-4){aPrev=aNew;continue;}
+        if(kind){rn+=((Math.random()+Math.random()+Math.random()-1.5)*1.6-rn)*.2;const w=TAU*(f+bw*rn)/sr;cw=Math.cos(w);sw=Math.sin(w);}
+        const da=(aNew-aPrev)/(i1-i0);let a=aPrev;
+        for(let i=i0;i<i1;i++){
+          const nr=re*cw-im*sw;im=re*sw+im*cw;re=nr;a+=da;
+          let v=re;
+          if(harm){
+            const z2r=re*re-im*im,z2i=2*re*im;
+            v+=h2*z2r;
+            if(h3||h5){const z3r=z2r*re-z2i*im;v+=h3*z3r;if(h5){const z3i=z2r*im+z2i*re;v+=h5*(z3r*z2r-z3i*z2i);}}
+          }
+          out[i]+=a*v;
+        }
+        aPrev=aNew;
+        const m=1/Math.sqrt(re*re+im*im);re*=m;im*=m;
+      }
+      if(performance.now()-t0>14){await yieldUI();t0=performance.now();if(tok!==PS.rtok)return undefined;}
+    }
+  }
+  if(tok!==PS.rtok)return undefined;
+  if(!any)return null;
+  let pk=0,q=0;for(let i=0;i<n;i++){const v=Math.abs(out[i]);if(v>pk)pk=v;q+=out[i]*out[i];}
+  const rms=Math.sqrt(q/n);if(pk<1e-5)return null;
+  const g=Math.min(.085/Math.max(rms,1e-6),.85/pk),fd=Math.floor(sr*.012);
+  for(let i=0;i<n;i++)out[i]*=g;
+  for(let i=0;i<fd;i++){const k=i/fd;out[i]*=k;out[n-1-i]*=k;}
+  const buf=ctx.createBuffer(1,n,sr);buf.copyToChannel(out,0);
+  return{buf,out};
+}
+async function psQueue(){
+  if(!ctx)return;
+  if(PS.busy){PS.again=true;return;}
+  PS.busy=true;
+  try{
+    do{
+      PS.again=false;const tok=++PS.rtok,r=await psRender(tok);
+      if(r===undefined)continue; // superseded
+      if(r){PS.buf=r.buf;PS.out=r.out;if(PS.playing)psPlayBuf(true);}
+      else{PS.buf=null;PS.out=null;if(PS.playing)psPlayStop();}
+    }while(PS.again);
+  }catch(e){}
+  PS.busy=false;psUI();
+}
+
+/* ---- playback: a loop that is swapped in place whenever you paint more ---- */
+function psPlayBuf(swap){
+  if(!ctx||!PS.buf)return;
+  const t=ctx.currentTime,dur=PS.buf.duration;
+  const off=swap&&PS.src?((t-PS.t0)%dur+dur)%dur:0;
+  const old=PS.src,og=PS.g;
+  const src=ctx.createBufferSource();src.buffer=PS.buf;src.loop=true;
+  const g=ctx.createGain();g.gain.value=0;src.connect(g);g.connect(A.bus.paint.in);
+  src.start(t+.005,off);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(1,t+(swap?.12:.05));
+  PS.src=src;PS.g=g;PS.t0=t-off;PS.playing=true;
+  if(old){og.gain.cancelScheduledValues(t);og.gain.setValueAtTime(og.gain.value,t);og.gain.linearRampToValueAtTime(0,t+.12);try{old.stop(t+.2);}catch(e){}setTimeout(()=>{try{og.disconnect();}catch(e){}},500);}
+}
+function psPlayStop(){
+  PS.playing=false;
+  if(PS.src&&ctx){const t=ctx.currentTime,g=PS.g,s=PS.src;g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+.15);try{s.stop(t+.2);}catch(e){}setTimeout(()=>{try{g.disconnect();}catch(e){}},500);}
+  PS.src=null;PS.g=null;psUI();
+}
+async function psTogglePlay(){
+  if(!ctx||!running){toast('Wake the world first');return;}
+  if(PS.playing){psPlayStop();return;}
+  if(PS.busy)await new Promise(r=>{const i=setInterval(()=>{if(!PS.busy){clearInterval(i);r();}},40);});
+  if(!PS.buf){toast('Paint something first');return;}
+  psPlayBuf(false);psUI();
+}
+
+/* ---- sketch an imported sound onto the canvas (its spectrogram becomes paint) ---- */
+async function psSketch(s){
+  if(!ctx||!s||!s.buf)return;
+  const buf=s.buf,sr=buf.sampleRate,C=PS.cols,R=PS.rows,opts=[6,12,24];
+  const want=Math.min(buf.duration,24);let secs=opts.find(o=>o>=want-.01)||24;
+  PS.secs=secs;
+  const start=s.mode==='play'&&s.t0?s.t0*buf.duration:0,len=Math.min(secs,Math.max(.2,buf.duration-start));
+  const x=grabMono(buf,start,len,1),N=4096,plan=fftPlan(N),re=new Float64Array(N),im=new Float64Array(N),win=new Float64Array(N);
+  for(let i=0;i<N;i++)win[i]=.5-.5*Math.cos(TAU*i/(N-1));
+  const mag=new Float32Array(C*R);let mx=1e-9;
+  const usedCols=Math.max(1,Math.min(C,Math.round(len/secs*C)));
+  for(let c=0;c<usedCols;c++){
+    const ctr=Math.floor((c+.5)/usedCols*x.length),b0=ctr-N/2;
+    for(let i=0;i<N;i++){const k=b0+i;re[i]=(k>=0&&k<x.length?x[k]:0)*win[i];im[i]=0;}
+    fft(re,im,plan,false);
+    for(let r=0;r<R;r++){
+      const kf=psF(r)*N/sr;if(kf>=N/2-2)continue;
+      const k0=Math.floor(kf),fr=kf-k0;
+      const m0=Math.hypot(re[k0],im[k0]),m1=Math.hypot(re[k0+1],im[k0+1]),m=m0*(1-fr)+m1*fr;
+      mag[c*R+r]=m;if(m>mx)mx=m;
+    }
+    if(c%24===23)await yieldUI();
+  }
+  PS.T.fill(0);PS.N.fill(0);
+  for(let i=0;i<mag.length;i++){
+    const v=clamp((20*Math.log10(mag[i]/mx+1e-9)+48)/48,0,1);
+    PS.T[i]=Math.pow(Math.max(0,(v-.42)/.58),1.35);
+  }
+  PS.dirty=true;PS.stat='Sketched “'+s.name+'” — now repaint it';psQueue();psSave();psUI();
+}
+
+/* ---- keep the painting as a real sound in the library ---- */
+function wavBytes(x,sr){
+  const n=x.length,ab=new ArrayBuffer(44+n*2),v=new DataView(ab);
+  const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++)v.setInt16(44+i*2,Math.round(clamp(x[i],-1,1)*32767),true);
+  return ab;
+}
+async function psKeep(){
+  if(PS.busy)await new Promise(r=>{const i=setInterval(()=>{if(!PS.busy){clearInterval(i);r();}},40);});
+  if(!PS.out){toast('Paint something first');return;}
+  const s=await ingest(wavBytes(PS.out,PS_SR),'Painted sound '+(++PS.kept),{set:{mode:'cloud'},noplay:true});
+  if(s){s.announced=true;toast('Kept as “'+s.name+'”. Find it under Controls › Your sounds and play it in any mode.',5200);}
+}
+
+/* ---- remember the painting ---- */
+function psSave(){
+  clearTimeout(PS.saveT);
+  PS.saveT=setTimeout(()=>{try{
+    const q=a=>{const u=new Uint8Array(a.length);for(let i=0;i<a.length;i++)u[i]=Math.round(a[i]*255);let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s);};
+    localStorage.setItem('biome.paint',JSON.stringify({secs:PS.secs,snap:PS.snap,timbre:PS.timbre,size:PS.size,hush:PS.hush,T:q(PS.T),N:q(PS.N)}));
+  }catch(e){}},900);
+}
+(function psLoad(){
+  try{
+    const o=JSON.parse(localStorage.getItem('biome.paint')||'null');if(!o)return;
+    if([6,12,24].includes(o.secs))PS.secs=o.secs;
+    if(typeof o.snap==='boolean')PS.snap=o.snap;
+    if(['pure','warm','hollow'].includes(o.timbre))PS.timbre=o.timbre;
+    if([0,1,2].includes(o.size))PS.size=o.size;
+    if(typeof o.hush==='boolean')PS.hush=o.hush;
+    const un=(s,a)=>{if(typeof s!=='string')return;const b=atob(s);if(b.length!==a.length)return;for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i)/255;};
+    un(o.T,PS.T);un(o.N,PS.N);
+  }catch(e){}
+})();
+
+/* ---- the canvas ---- */
+function psDraw(){
+  if(!PS.on)return;
+  PS.raf=requestAnimationFrame(psDraw);
+  const cv=PS.cv,g=cv.getContext('2d'),C=PS.cols,R=PS.rows;
+  const W2=cv.width,H2=cv.height;
+  if(PS.dirty){
+    const d=PS.imd.data,T=PS.T,N=PS.N;
+    for(let r=0;r<R;r++){
+      const y=R-1-r;
+      for(let c=0;c<C;c++){
+        const i=c*R+r,p=(y*C+c)*4,a=Math.pow(T[i],.8),b=Math.pow(N[i],.8);
+        d[p]=Math.min(255,9+a*150+b*175);d[p+1]=Math.min(255,13+a*232+b*135);d[p+2]=Math.min(255,22+a*205+b*255);d[p+3]=255;
+      }
+    }
+    PS.im.getContext('2d').putImageData(PS.imd,0,0);PS.dirty=false;
+  }
+  g.imageSmoothingEnabled=true;g.drawImage(PS.im,0,0,W2,H2);
+  const dpr=W2/Math.max(1,cv.clientWidth);
+  g.lineWidth=1;
+  for(let r=0;r<R;r+=2){
+    if(!psInScale(r))continue;
+    const y=Math.round(H2*(1-(r+.5)/R))+.5,root=((r/2-W.rootSemi)%12+12)%12===0;
+    g.strokeStyle=root?'rgba(255,255,255,.2)':'rgba(255,255,255,.06)';g.beginPath();g.moveTo(0,y);g.lineTo(W2,y);g.stroke();
+    if(root){g.fillStyle='rgba(255,255,255,.55)';g.font=Math.round(11*dpr)+'px -apple-system,system-ui,sans-serif';g.fillText(noteName(psF(r)),6*dpr,y-3*dpr);}
+  }
+  g.fillStyle='rgba(255,255,255,.35)';g.font=Math.round(11*dpr)+'px -apple-system,system-ui,sans-serif';
+  const step=PS.secs>12?4:2;
+  for(let s=step;s<PS.secs;s+=step){const x=W2*s/PS.secs;g.fillRect(x,H2-8*dpr,1,8*dpr);g.fillText(s+'s',x+3*dpr,H2-4*dpr);}
+  if(PS.playing&&PS.buf&&ctx){
+    const dur=PS.buf.duration,f=(((ctx.currentTime-PS.t0)%dur)+dur)%dur/dur,x=f*W2;
+    g.fillStyle='rgba(255,255,255,.14)';g.fillRect(Math.max(0,x-30*dpr),0,30*dpr,H2);
+    g.fillStyle='rgba(255,255,255,.8)';g.fillRect(x-1,0,2,H2);
+  }
+}
+function psSize(){
+  const cv=PS.cv,d=Math.min(window.devicePixelRatio||1,2),w=Math.max(100,Math.round(cv.clientWidth*d)),h=Math.max(100,Math.round(cv.clientHeight*d));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+  PS.dirty=true;
+}
+let psUI=()=>{};
+(function(){
+  PS.cv=$('#psCv');PS.im=document.createElement('canvas');PS.im.width=PS.cols;PS.im.height=PS.rows;
+  PS.imd=PS.im.getContext('2d').createImageData(PS.cols,PS.rows);
+  const bar=$('#psBar'),els={};
+  const seg=(label,items,get,set)=>{
+    const d=document.createElement('div');d.className='seg';d.title=label;
+    items.forEach(([k,l])=>{const b=document.createElement('button');b.textContent=l;b.addEventListener('click',()=>{set(k);refresh();});b.dataset.k=k;d.appendChild(b);});
+    bar.appendChild(d);return()=>{d.querySelectorAll('button').forEach(b=>b.classList.toggle('on',String(get())===b.dataset.k));};
+  };
+  const syncs=[];
+  syncs.push(seg('Brush',[['tone','Tone'],['air','Air'],['erase','Erase']],()=>PS.tool,k=>{PS.tool=k;}));
+  syncs.push(seg('Size',[['0','S'],['1','M'],['2','L']],()=>PS.size,k=>{PS.size=+k;psSave();}));
+  syncs.push(seg('Timbre',[['pure','Pure'],['warm','Warm'],['hollow','Hollow']],()=>PS.timbre,k=>{PS.timbre=k;psQueue();psSave();}));
+  syncs.push(seg('Length',[['6','6 s'],['12','12 s'],['24','24 s']],()=>PS.secs,k=>{PS.secs=+k;psQueue();psSave();}));
+  const row2=document.createElement('div');row2.className='chips';bar.after(row2);
+  const bPlay=chip(row2,'▶ Play',()=>psTogglePlay());
+  const bSnap=chip(row2,'Snap to key',()=>{PS.snap=!PS.snap;refresh();psSave();});
+  const bHush=chip(row2,'Hush the world',()=>{PS.hush=!PS.hush;refresh();psSave();});
+  chip(row2,'Sketch a sound',()=>{
+    if(!SAMP.length){toast('Add a sound first (Controls › Your sounds)');return;}
+    const s=SAMP[PS.sketchI++%SAMP.length];psSketch(s);
+  });
+  chip(row2,'Clear',()=>psClear());
+  chip(row2,'Keep as sound',()=>psKeep());
+  function refresh(){
+    syncs.forEach(f=>f());bSnap.classList.toggle('on',PS.snap);bHush.classList.toggle('on',PS.hush);
+    bPlay.textContent=PS.playing?'■ Stop':'▶ Play';bPlay.classList.toggle('on',PS.playing);
+    $('#psStat').textContent=PS.busy?'rendering…':PS.stat||(PS.buf?'':'draw with your finger');
+  }
+  psUI=refresh;refresh();
+  $('#psClose').addEventListener('click',()=>psClose());
+  const rowOf=y=>{const r=PS.cv.getBoundingClientRect();return(1-(y-r.top)/r.height)*PS.rows-.5;};
+  const colOf=x=>{const r=PS.cv.getBoundingClientRect();return(x-r.left)/r.width*PS.cols-.5;};
+  const pt=e=>{let ry=clamp(rowOf(e.clientY),0,PS.rows-1);if(PS.tool==='tone'&&PS.snap)ry=psSnapRow(ry);return[colOf(e.clientX),ry,e.pressure>0?e.pressure:.5];};
+  const strokeTo=(x,y,p)=>{
+    const erase=PS.tool==='erase',str=erase?.3:.14+.3*p;
+    if(PS.lx<0){psStamp(x,y,str,erase);}
+    else{
+      const dc=x-PS.lx,dr=y-PS.ly,n=Math.max(1,Math.ceil(Math.max(Math.abs(dc)/.8,Math.abs(dr)/1.5)));
+      for(let k=1;k<=n;k++)psStamp(PS.lx+dc*k/n,PS.ly+dr*k/n,str,erase);
+    }
+    PS.lx=x;PS.ly=y;
+  };
+  PS.cv.addEventListener('pointerdown',e=>{
+    e.preventDefault();if(PS.pid>=0)return;
+    if(!ctx||!running){toast('Wake the world first');return;}
+    PS.pid=e.pointerId;try{PS.cv.setPointerCapture(e.pointerId);}catch(_){}
+    PS.lx=-1;const[x,y,p]=pt(e);strokeTo(x,y,p);psLiveStart(psF(y));hideHint();
+  });
+  PS.cv.addEventListener('pointermove',e=>{
+    if(e.pointerId!==PS.pid)return;
+    const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+    for(const q of(evs.length?evs:[e])){const[x,y,p]=pt(q);strokeTo(x,y,p);}
+    const[,y]=pt(e);psLiveMove(psF(y));
+  });
+  const up=e=>{
+    if(e.pointerId!==PS.pid)return;PS.pid=-1;PS.lx=-1;psLiveStop();PS.stat='';psQueue();psSave();
+  };
+  PS.cv.addEventListener('pointerup',up);PS.cv.addEventListener('pointercancel',up);
+  addEventListener('resize',()=>{if(PS.on)psSize();});
+  setInterval(()=>{if(PS.on&&PS.hush&&ctx&&running)W.hushUntil=Math.max(W.hushUntil,ctx.currentTime+.9);},400);
+  $('#btnPaint').addEventListener('click',()=>{if(PS.on)psClose();else psOpen();});
+})();
+function psOpen(){
+  if(!ctx||!running){toast('Wake the world first');return;}
+  PS.on=true;$('#paint').classList.add('open');$('#btnPaint').classList.add('on');
+  psSize();psUI();cancelAnimationFrame(PS.raf);psDraw();hideHint();
+  if(!PS.buf&&!PS.busy)psQueue();
+}
+function psClose(){
+  PS.on=false;$('#paint').classList.remove('open');$('#btnPaint').classList.remove('on');
+  cancelAnimationFrame(PS.raf);psLiveStop(true);if(PS.playing)psPlayStop();
+}
+
+/* ============================================================
+   Composer — Biome writes pieces with a theme, a development, a change of key and a return
+   ============================================================ */
+const CP={on:false,opts:{pad:true,bass:true,melody:true,arp:true,mine:false,endless:true},len:6,pace:.45,
+  piece:null,sec:0,bar:0,nextBar:0,over:false,endT:0,inten:0,pb:null,fade:null,fadeW:null,home:0,lastBarT:0,lastBeat:1,cur:null,n:0,stat:''};
+try{const o=JSON.parse(localStorage.getItem('biome.comp')||'{}');
+  for(const k in CP.opts)if(typeof o[k]==='boolean')CP.opts[k]=o[k];
+  if([3,6,12].includes(o.len))CP.len=o.len;if(typeof o.pace==='number')CP.pace=clamp(o.pace,0,1);}catch(e){}
+const saveComp=()=>{try{localStorage.setItem('biome.comp',JSON.stringify(Object.assign({len:CP.len,pace:CP.pace},CP.opts)));}catch(e){}};
+function cpBus(){ // everything the composer plays goes through one fade, so stopping is a soft landing
+  if(CP.pb)return CP.pb;
+  const f=ctx.createGain(),fw=ctx.createGain();f.connect(A.bus.comp.in);fw.connect(A.bus.comp.wet);
+  CP.fade=f;CP.fadeW=fw;return CP.pb={in:f,wet:fw};
+}
+const CP_PROG={
+  7:{A:[[0,5,3,4],[0,3,5,4],[0,2,5,4],[0,4,5,3],[0,5,2,4]],B:[[5,3,0,4],[3,4,0,0],[5,4,3,4],[2,5,3,4]],C:[[3,0,3,4],[5,3,5,4]]},
+  5:{A:[[0,3,2,4],[0,2,3,1],[0,4,3,2]],B:[[3,2,0,4],[2,4,3,0]],C:[[2,3,2,4],[3,0,3,1]]}
+};
+const CP_RH={4:[[0,1,2,3],[0,1.5,2,3],[0,2,2.5,3],[0,1,2],[0,.5,1,2,3],[0,1.5,3],[0,2],[1,2,3],[0,1,2.5,3]],3:[[0,1,2],[0,1.5,2],[0,2],[0,1,1.5,2],[0,1.5],[1,2]]};
+function cpMotif(meter){ // a two-bar cell of notes: beat position, scale step, length in beats
+  const cell=[];let st=pick([0,2,4]);
+  for(let bar=0;bar<2;bar++){
+    const rh=pick(CP_RH[meter]);
+    rh.forEach((b,k)=>{
+      st=clamp(st+pick([-2,-1,-1,0,1,1,1,2,3,-3]),-4,7);
+      const nxt=k+1<rh.length?rh[k+1]:meter;
+      cell.push({b:bar*meter+b,st,len:Math.min(nxt-b,2.5)});
+    });
+  }
+  return cell;
+}
+function cpMakePiece(){
+  const L=W.scale.length>=7?7:5,meter=pick([4,4,4,3]),bpm=50+CP.pace*34,beat=60/bpm,barDur=beat*meter;
+  const total=Math.max(24,Math.round(CP.len*60/barDur));
+  const forms=[['Intro','A','B','A','Outro'],['Intro','A','A','B','A','Outro'],['Intro','A','B','Bridge','A','Outro']];
+  const form=pick(forms),wt={Intro:.1,A:.21,B:.22,Bridge:.14,Outro:.1};
+  const sum=form.reduce((s,n)=>s+wt[n],0);
+  const P=CP_PROG[L],mA=cpMotif(meter),mB=cpMotif(meter),mC=cpMotif(meter);
+  const progA=pick(P.A),progB=pick(P.B),progC=pick(P.C);
+  const locked=S.keyLock;
+  const secs=form.map((nm,k)=>{
+    const bars=Math.max(4,Math.round(wt[nm]/sum*total/4)*4);
+    const seenA=form.slice(0,k).includes('A');
+    const o={name:nm,bars,label:nm};
+    if(nm==='Intro'){Object.assign(o,{prog:progA,motif:mA,inten:.3,mel:.4,mask:{pad:1,bass:0,arp:0,mel:1},reg:0,shift:0});}
+    else if(nm==='A'){Object.assign(o,{prog:progA,motif:mA,inten:seenA?.78:.62,mel:1,mask:{pad:1,bass:1,arp:seenA?1:0,mel:1},reg:seenA?1:0,shift:0,invert:seenA&&Math.random()<.5,label:seenA?'A (return)':'A'});}
+    else if(nm==='B'){Object.assign(o,{prog:progB,motif:mB,inten:.9,mel:1,mask:{pad:1,bass:1,arp:1,mel:1},reg:1,shift:locked?0:pick([7,5,2,10,3]),label:'B'});}
+    else if(nm==='Bridge'){Object.assign(o,{prog:progC,motif:mC,inten:.4,mel:.55,mask:{pad:1,bass:0,arp:1,mel:1},reg:0,shift:locked?0:pick([7,5,9]),label:'Bridge'});}
+    else{Object.assign(o,{prog:progA.slice(0,3).concat([0]),motif:mA,inten:.25,mel:.35,mask:{pad:1,bass:1,arp:0,mel:1},reg:0,shift:0,label:'Outro'});}
+    return o;
+  });
+  const T=['Nocturne','Lullaby','Drift','Vigil','Tide','Evensong','Cradle','Passage','Lantern','Meadow'];
+  return{secs,meter,beat,barDur,L,title:pick(T)+' in '+NOTE[((W.rootSemi%12)+12)%12]+' '+W.modeName,bars:secs.reduce((s,x)=>s+x.bars,0)};
+}
+/* ---- voices ---- */
+function cpPad(t,f,dur,vel,pan,lp){
+  const ev=mkEvent(cpBus(),pan,.75,lp||2300);
+  const o=ctx.createOscillator(),o2=ctx.createOscillator(),o3=ctx.createOscillator(),g2=ctx.createGain(),g3=ctx.createGain();
+  o.type='triangle';o2.type='sine';o3.type='triangle';
+  o.frequency.value=f;o.detune.value=-6;o2.frequency.value=f*2.002;g2.gain.value=.26;o3.frequency.value=f;o3.detune.value=7;g3.gain.value=.7;
+  o.connect(ev.head);o2.connect(g2);g2.connect(ev.head);o3.connect(g3);g3.connect(ev.head);ev.nodes.push(g2,g3);
+  const att=Math.min(1.1,dur*.3),rel=Math.min(1.3,dur*.4),e=ev.head.gain;
+  e.setValueAtTime(0,t);e.linearRampToValueAtTime(vel,t+att);e.setValueAtTime(vel,Math.max(t+att,t+dur-rel));e.linearRampToValueAtTime(0,t+dur);
+  [o,o2,o3].forEach(x=>{x.start(t);x.stop(t+dur+.05);});release(o,ev.nodes);
+}
+function cpBass(t,f,dur,vel){
+  const ev=mkEvent(cpBus(),0,.12,520);
+  const o=ctx.createOscillator(),o2=ctx.createOscillator(),g2=ctx.createGain();
+  o.type='sine';o2.type='triangle';o.frequency.value=f;o2.frequency.value=f*2;g2.gain.value=.18;
+  o.connect(ev.head);o2.connect(g2);g2.connect(ev.head);ev.nodes.push(g2);
+  const e=ev.head.gain;e.setValueAtTime(0,t);e.linearRampToValueAtTime(vel,t+.05);e.exponentialRampToValueAtTime(vel*.55,t+dur*.5);e.linearRampToValueAtTime(0,t+dur);
+  o.start(t);o2.start(t);o.stop(t+dur+.05);o2.stop(t+dur+.05);release(o,ev.nodes);
+}
+function cpMelodyNote(t,idx,vel,pan,len){
+  const f=noteHz(idx);
+  if(CP.opts.mine&&Math.random()<.6){
+    const c=SAMP.filter(s=>!s.dead&&!s.off&&s.hz&&s.level>.02);
+    if(c.length){const s=pick(c);playSample(s,t,{rate:clamp(f/s.hz,.5,2),pan,dist:.05,max:Math.max(1.2,len*.6),vel:.8});return;}
+  }
+  pluck(t,f,vel,pan,.85,cpBus());
+}
+/* ---- one bar ---- */
+function cpBar(T){
+  const P=CP.piece,sec=P.secs[CP.sec],n=CP.bar,L=P.L,bd=P.beat,meter=P.meter;
+  const last=CP.sec===P.secs.length-1,left=sec.bars-n;
+  const rit=last&&left<=4?.06*(5-left):0,b2=bd*(1+rit),barLen=b2*meter;
+  if(n===0){ // entering a section: the key may move, and the world moves with it
+    const target=(CP.home+sec.shift)%12;
+    if(!S.keyLock&&target!==W.rootSemi)applyKey(target,W.modeName);
+  }
+  const d=sec.prog[n%sec.prog.length],chord=[d,d+2,d+4],I=sec.inten,sd=CP.n++%4;
+  const mid=2*L+Math.floor(L/2)+sec.reg*2;
+  later(T,()=>{CP.inten=I;CP.cur={sec:CP.sec,bar:n};});
+  const vel=k=>k*(0.65+.6*I);
+  if(CP.opts.pad&&sec.mask.pad){
+    chord.forEach((c,k)=>cpPad(T+k*.04,noteHz(c+L),barLen*1.03,vel(.075),(k-1)*.35,1800+1400*I));
+    if(I>.7)cpPad(T+.12,noteHz(d+L*2),barLen,vel(.04),.5,2600);
+  }
+  if(CP.opts.bass&&sec.mask.bass){
+    cpBass(T,noteHz(d),barLen*.96,vel(.2));
+    if(meter===4&&I>.7)cpBass(T+b2*2,noteHz(d+4),b2*1.9,vel(.12));
+  }
+  if(CP.opts.arp&&sec.mask.arp&&I>.35){
+    const steps=meter*2,pat=[0,1,2,1,2,1,2,1];
+    for(let k=0;k<steps;k++){
+      if(Math.random()<.1)continue;
+      const ci=chord[pat[k%pat.length]]+L*2+(k%4===3?0:0),at=T+k*b2/2+rand(-.008,.008);
+      pluck(at,noteHz(ci),vel(.05)*(k%2?.75:1),clamp((k/steps)*1.2-.6,-.7,.7),.55,cpBus());
+    }
+  }
+  if(CP.opts.melody&&sec.mask.mel&&Math.random()<sec.mel){
+    const cellBar=n%2,cyc=n%4,shift=d>L/2?d-L:d;
+    const near=i=>{ // nearest scale index that belongs to the chord
+      let best=i,bd2=9;for(let q=-3;q<=3;q++){const m=(((i+q)%L)+L)%L;if(chord.some(c=>((c%L)+L)%L===m)&&Math.abs(q)<bd2){bd2=Math.abs(q);best=i+q;}}return best;
+    };
+    let notes=sec.motif.filter(x=>x.b>=cellBar*meter&&x.b<(cellBar+1)*meter).map(x=>({b:x.b-cellBar*meter,st:x.st,len:x.len}));
+    if(cyc===3){notes=notes.filter(x=>x.b<1.6);notes.push({b:meter===4?2:1.5,st:null,len:meter-1.5});}
+    notes.forEach(x=>{
+      if(Math.random()<.06)return;
+      let idx;
+      if(x.st==null)idx=near(mid+shift);
+      else{idx=mid+(sec.invert?-x.st:x.st)+shift;if(x.b%2===0)idx=near(idx);}
+      idx=clamp(idx,2*L,4*L+2);
+      const at=T+x.b*b2+rand(-.012,.012),pan=clamp((idx-3*L)/(2*L)*1.4,-.7,.7);
+      cpMelodyNote(at,idx,vel(.17)*rand(.85,1.1),pan,x.len*b2);
+      const nx=VW*clamp(.12+.76*(idx-2*L)/(2*L+2),.05,.95),hue=150+((idx%L)/L)*170;
+      later(at,()=>{noteDot(nx,VH*.62,hue);});
+    });
+  }
+  CP.lastBarT=T;CP.lastBeat=b2;
+  CP.bar++;
+  if(CP.bar>=sec.bars){CP.sec++;CP.bar=0;if(CP.sec>=P.secs.length){CP.over=true;CP.endT=T+barLen+3.5;}}
+  return barLen;
+}
+function cpNewPiece(at,fresh){
+  if(fresh&&!S.keyLock&&Math.random()<.65)driftKey();
+  CP.home=W.rootSemi;CP.piece=cpMakePiece();CP.sec=0;CP.bar=0;CP.n=0;CP.over=false;CP.nextBar=at;CP.cur=null;
+  CP.stat='';
+}
+function compTick(t,dt){
+  if(!CP.on)return;
+  if(CP.nextBar<t-1.5)CP.nextBar=t+.2;
+  while(CP.on&&!CP.over&&CP.nextBar<t+1.3){CP.nextBar+=cpBar(CP.nextBar);}
+  if(CP.over&&t>CP.endT){
+    if(CP.opts.endless)cpNewPiece(t+1.2,true);
+    else{cpStop();cpUI();$('#comp').classList.remove('open');$('#btnComp').classList.remove('on');toast('The piece has finished');}
+  }
+}
+function cpBeat(tb){ // the heartbeat can settle onto the composer's pulse
+  if(!CP.on||!ctx||CP.over)return null;
+  let P=CP.lastBeat;while(60/P>72)P*=2;while(60/P<34)P/=2;
+  const k=Math.ceil((tb-CP.lastBarT)/P-1e-6);return CP.lastBarT+k*P;
+}
+function cpStart(){
+  if(!ctx||!running){toast('Wake the world first');return false;}
+  cpBus();const t=ctx.currentTime;
+  [CP.fade,CP.fadeW].forEach(g=>{g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(1,t+.3);});
+  cpNewPiece(t+.6,false);CP.on=true;return true;
+}
+function cpStop(){
+  if(!CP.on&&!CP.pb)return;
+  CP.on=false;CP.inten=0;
+  if(CP.fade){const t=ctx.currentTime;[CP.fade,CP.fadeW].forEach(g=>{g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+1.4);});}
+}
+let cpUI=()=>{};
+(function(){
+  const box=$('#cpOpts'),els={};
+  [['pad','Pad'],['bass','Bass'],['melody','Melody'],['arp','Arpeggio'],['mine','My sounds'],['endless','Keep going']].forEach(([k,l])=>{
+    els[k]=chip(box,l,()=>{CP.opts[k]=!CP.opts[k];els[k].classList.toggle('on',CP.opts[k]);saveComp();});els[k].classList.toggle('on',CP.opts[k]);
+  });
+  const lenBox=$('#cpLen'),lb=[];
+  [[3,'About 3 min'],[6,'6 min'],[12,'12 min']].forEach(([m,l])=>{const b=document.createElement('button');b.textContent=l;b.addEventListener('click',()=>{CP.len=m;saveComp();sync();});lenBox.appendChild(b);lb.push([m,b]);});
+  const sync=()=>lb.forEach(([m,b])=>b.classList.toggle('on',m===CP.len));sync();
+  chip($('#cpAct'),'New piece',()=>{if(CP.on){const t=ctx.currentTime;cpNewPiece(t+1.5,true);}else if(cpStart()){$('#comp').classList.add('open');$('#btnComp').classList.add('on');}});
+  const sl=$('#cpPace'),sv=$('#cpPaceV');sl.value=CP.pace;sv.textContent=Math.round(50+CP.pace*34)+' bpm';
+  sl.addEventListener('input',()=>{CP.pace=+sl.value;sv.textContent=Math.round(50+CP.pace*34)+' bpm';saveComp();});
+  sl.addEventListener('change',()=>{ // a new pace applies from the next piece
+    if(CP.on)toast('The new pace starts with the next piece',2400);
+  });
+  $('#btnComp').addEventListener('click',()=>{
+    const c=$('#comp');
+    if(CP.on||c.classList.contains('open')){cpStop();c.classList.remove('open');$('#btnComp').classList.remove('on');return;}
+    if(cpStart()){c.classList.add('open');$('#btnComp').classList.add('on');hideHint();}
+  });
+  $('#cpClose').addEventListener('click',()=>{cpStop();$('#comp').classList.remove('open');$('#btnComp').classList.remove('on');});
+  const map=$('#cpMap');let mapSig='';
+  cpUI=()=>{
+    const P=CP.piece;if(!P)return;
+    $('#cpTitle').textContent=P.title+' · '+P.meter+'/4';
+    const sig=P.secs.map(s=>s.label+s.bars).join('|');
+    if(sig!==mapSig){mapSig=sig;map.innerHTML='';P.secs.forEach(s=>{const d=document.createElement('div');d.style.flex=s.bars;d.textContent=s.label;map.appendChild(d);});}
+    const cur=CP.cur;
+    [...map.children].forEach((d,k)=>d.classList.toggle('on',!!cur&&cur.sec===k));
+    $('#cpStat').textContent=cur?(P.secs[cur.sec].label+' · bar '+(cur.bar+1)+' of '+P.secs[cur.sec].bars):CP.on?'starting…':'';
+  };
+  setInterval(()=>{if(CP.on&&!document.hidden)cpUI();},300);
+})();
 
 // ---- panel wiring ----
 const $$=s=>document.querySelectorAll(s);
