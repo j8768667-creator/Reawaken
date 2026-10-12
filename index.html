@@ -293,7 +293,8 @@ input[type=text]:focus{outline:none;border-color:rgba(143,227,200,.7)}
   <label class="cpField">Melody instrument<select id="cpVoice"><option value="pluck">Pluck</option><option value="pad">Soft pad</option><option value="bell">Bell</option><option value="flute">Flute</option></select></label>
   <label class="cpField">My audio<select id="cpSound"><option value="">All added sounds</option></select></label>
   <label class="cpField">Audio use<select id="cpSoundMode"><option value="blend">Blend with instrument</option><option value="only">Audio melody only</option></select></label>
-  <label class="pill sm" for="cpFile">+ Add composer audio…</label><input id="cpFile" type="file" accept="audio/*" multiple hidden>
+  <!-- Leave accept unset: iPadOS can grey out valid audio files when audio/* is used. Decode selected files in ingest instead. -->
+  <label class="pill sm" for="cpFile">+ Add composer audio…</label><input id="cpFile" type="file" multiple hidden>
   <p class="legend" id="cpAudioHint"></p>
   <label class="fader"><span class="lab"><b>Composer volume</b><i id="cpVolumeV"></i></span><input id="cpVolume" type="range" min="0" max="1" step="0.01"></label>
   <label class="fader"><span class="lab"><b>Tone</b><i id="cpToneV"></i></span><input id="cpTone" type="range" min="0" max="1" step="0.01"></label>
